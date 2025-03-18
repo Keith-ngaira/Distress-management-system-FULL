@@ -5,8 +5,8 @@ A comprehensive system for managing distress messages, case assignments, and wor
 ## System Overview
 
 The Distress Message Management System is a full-stack application built with:
-- Backend: Node.js + TypeScript + Express
-- Frontend: React.js + TypeScript + Material-UI
+- Backend: Node.js + ReactJS + Express
+- Frontend: React.js + ReactJS + Material-UI
 - Database: MySQL
 
 ## Quick Start
