@@ -1,69 +1,189 @@
-# Distress Message Management System
+# Distress Management System
 
-A comprehensive system for managing distress messages, case assignments, and workflow tracking.
+A comprehensive web application for managing and responding to distress messages, built with React and Node.js.
 
-## System Overview
+## Features
 
-The Distress Message Management System is a full-stack application built with:
-- Backend: Node.js + ReactJS + Express
-- Frontend: React.js + ReactJS + Material-UI
-- Database: MySQL
+- **User Authentication & Authorization**
+  - Role-based access control (Admin, Director, Front Office, Cadet)
+  - Secure JWT-based authentication
+  - Password encryption and security measures
 
-## Quick Start
+- **Distress Message Management**
+  - Create and track distress messages
+  - Assign cases to specific users
+  - Priority-based case handling
+  - Case updates and resolution tracking
 
-1. **Prerequisites**
-   - Node.js (v14 or higher)
-   - MySQL (via XAMPP)
-   - npm or yarn
+- **Real-time Notifications**
+  - Instant notifications for new assignments
+  - Case update notifications
+  - Unread notification tracking
 
-2. **Installation**
+- **Dashboard & Analytics**
+  - Case statistics and metrics
+  - Performance tracking
+  - Status-based case filtering
 
+- **File Management**
+  - Secure file uploads and storage
+  - Support for multiple file types
+  - Attachment management system
+
+## Tech Stack
+
+### Frontend
+- React.js
+- Material-UI (MUI)
+- React Query for data fetching
+- Context API for state management
+- Axios for API communication
+
+### Backend
+- Node.js & Express.js
+- MySQL database
+- JWT for authentication
+- Multer for file uploads
+- Winston for logging
+
+## Getting Started
+
+### Prerequisites
+- Node.js (v14 or higher)
+- MySQL (v8 or higher)
+- Git
+
+### Installation
+
+1. Clone the repository:
 ```bash
-# Clone the repository
-git clone [repository-url]
+git clone https://github.com/Keith-ngaira/Distress-management-system-FULL.git
+cd Distress-management-system-FULL
+```
 
-# Install backend dependencies
+2. Install backend dependencies:
+```bash
 cd backend
 npm install
+```
 
-# Install frontend dependencies
+3. Set up backend environment variables:
+   - Create a .env file in the backend directory
+   - Add the following variables:
+```makefile
+PORT=5556
+DB_HOST=localhost
+DB_USER=your_db_user
+DB_PASSWORD=your_db_password
+DB_NAME=management
+DB_PORT=3306
+JWT_SECRET=your_jwt_secret
+UPLOAD_DIR=uploads
+FRONTEND_URL=http://localhost:3002
+```
+
+4. Initialize the database:
+```bash
+# Run the schema.sql file in your MySQL server
+mysql -u your_user -p management < src/database/schema.sql
+```
+
+5. Install frontend dependencies:
+```bash
 cd ../frontend
 npm install
 ```
 
-3. **Database Setup**
-   - Start XAMPP
-   - Open phpMyAdmin
-   - Import the schema from `backend/src/database/schema.sql`
-   - Import initial data from `backend/src/database/init-admin.sql`
-
-4. **Environment Setup**
-   Create a `.env` file in the backend directory:
-```env
-DB_HOST=localhost
-DB_USER=root
-DB_PASSWORD=
-DB_NAME=management
-JWT_SECRET=your_jwt_secret
+6. Set up frontend environment variables:
+   - Create a .env file in the frontend directory
+   - Add:
+```makefile
+REACT_APP_API_URL=http://localhost:5556
+PORT=3002
 ```
 
-5. **Running the Application**
-```bash
-# Start backend (from backend directory)
-npm run dev
+### Running the Application
 
-# Start frontend (from frontend directory)
+1. Start the backend server:
+```bash
+cd backend
+npm run start
+```
+
+2. Start the frontend development server:
+```bash
+cd frontend
 npm start
 ```
 
-## Default Users
+The application will be available at:
+- Frontend: http://localhost:3002
+- Backend API: http://localhost:5556
 
-The system comes with four default users:
-- Admin: username: `admin`, password: `admin123`
-- Director: username: `director`, password: `director123`
-- Front Office: username: `frontoffice`, password: `frontoffice123`
-- Cadet: username: `cadet`, password: `cadet123`
+### Default Users
+
+The system comes with pre-configured users:
+- Admin: username: admin, password: admin123
+- Director: username: director, password: director123
+- Front Office: username: frontoffice, password: frontoffice123
+- Cadet: username: cadet, password: cadet123
+
+## Project Structure
+
+```
+distress-management-system/
+├── backend/                # Backend Node.js application
+│   ├── src/
+│   │   ├── controllers/   # Request handlers
+│   │   ├── database/      # Database schemas and migrations
+│   │   ├── middleware/    # Express middleware
+│   │   ├── routes/       # API routes
+│   │   ├── services/     # Business logic
+│   │   └── utils/        # Utility functions
+│   └── uploads/          # File upload directory
+├── frontend/             # React frontend application
+│   ├── public/          # Static files
+│   └── src/
+│       ├── components/  # Reusable React components
+│       ├── contexts/    # React contexts
+│       ├── pages/      # Page components
+│       ├── services/   # API services
+│       └── theme/      # UI theme configuration
+└── docs/               # Project documentation
+```
 
 ## Documentation
 
-For detailed documentation, please refer to the `/docs` directory.
+Detailed documentation is available in the docs directory:
+- [System Overview](docs/01-system-overview.md)
+- [User Roles & Permissions](docs/02-user-roles-and-permissions.md)
+- [Workflows](docs/03-workflows.md)
+- [API Documentation](docs/04-api-documentation.md)
+- [Deployment Guide](docs/05-deployment-guide.md)
+
+## Security Features
+
+- CORS protection
+- JWT token authentication
+- Password hashing
+- Input validation
+- SQL injection prevention
+- File upload validation
+- Rate limiting
+- Secure headers with Helmet
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License.
+
+## Contact
+
+Keith Ngaira - [GitHub](https://github.com/Keith-ngaira)
