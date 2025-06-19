@@ -301,7 +301,7 @@ const Dashboard = () => {
                 </ListItem>
                 <ListItem>
                   <ListItemIcon>
-                    <CheckCircle />
+                    <ResolvedIcon />
                   </ListItemIcon>
                   <ListItemText
                     primary="Total Cases Handled"
