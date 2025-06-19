@@ -1,6 +1,6 @@
 import { executeQuery } from "../db.js";
 import { logger } from "../middleware/logger.js";
-import { mockDashboardData } from "./mockData.js";
+import { mockDashboardData, mockDirectorData } from "./mockData.js";
 
 export const getDashboardData = async (req, res) => {
   try {
@@ -55,44 +55,60 @@ export const getDashboardData = async (req, res) => {
             LIMIT 5
         `);
 
+    const baseData = {
+      stats: {
+        total: parseInt(caseStats[0]?.total || 0),
+        pending: parseInt(caseStats[0]?.pending || 0),
+        assigned: parseInt(caseStats[0]?.assigned || 0),
+        active: parseInt(caseStats[0]?.active || 0),
+        resolved: parseInt(caseStats[0]?.resolved || 0),
+        avgFirstResponse: Math.round(caseStats[0]?.avg_first_response || 0),
+        avgResolutionTime: Math.round(caseStats[0]?.avg_resolution_time || 0),
+      },
+      priorityStats: priorityStats.map((stat) => ({
+        priority: stat.priority,
+        count: parseInt(stat.count),
+        avgFirstResponse: Math.round(stat.avg_first_response || 0),
+      })),
+      caseCategories: caseCategories.map((cat) => ({
+        name: cat.name,
+        count: parseInt(cat.count),
+      })),
+      recentCases: recentCases.map((c) => ({
+        id: c.id,
+        subject: c.subject,
+        status: c.status,
+        priority: c.priority,
+        createdAt: c.created_at,
+        assignedTo: c.assigned_to,
+      })),
+    };
+
+    // Add director-specific data when MySQL is available
+    if (req.user?.role === "director") {
+      // For now, when MySQL is available, we'll use mock director data
+      // In production, this would fetch real director-specific data from database
+      return res.json({
+        success: true,
+        data: { ...baseData, ...mockDirectorData },
+      });
+    }
+
     return res.json({
       success: true,
-      data: {
-        stats: {
-          total: parseInt(caseStats[0]?.total || 0),
-          pending: parseInt(caseStats[0]?.pending || 0),
-          assigned: parseInt(caseStats[0]?.assigned || 0),
-          active: parseInt(caseStats[0]?.active || 0),
-          resolved: parseInt(caseStats[0]?.resolved || 0),
-          avgFirstResponse: Math.round(caseStats[0]?.avg_first_response || 0),
-          avgResolutionTime: Math.round(caseStats[0]?.avg_resolution_time || 0),
-        },
-        priorityStats: priorityStats.map((stat) => ({
-          priority: stat.priority,
-          count: parseInt(stat.count),
-          avgFirstResponse: Math.round(stat.avg_first_response || 0),
-        })),
-        caseCategories: caseCategories.map((cat) => ({
-          name: cat.name,
-          count: parseInt(cat.count),
-        })),
-        recentCases: recentCases.map((c) => ({
-          id: c.id,
-          subject: c.subject,
-          status: c.status,
-          priority: c.priority,
-          createdAt: c.created_at,
-          assignedTo: c.assigned_to,
-        })),
-      },
+      data: baseData,
     });
   } catch (error) {
     logger.error("Error fetching dashboard data, using mock data:", error);
 
     // Fallback to mock data when MySQL is unavailable
+    const userData = req.user;
+    const responseData =
+      userData?.role === "director" ? mockDirectorData : mockDashboardData;
+
     return res.json({
       success: true,
-      data: mockDashboardData,
+      data: responseData,
     });
   }
 };
