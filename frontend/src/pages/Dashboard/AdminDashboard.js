@@ -37,7 +37,6 @@ import {
   Person as PersonIcon,
   TrendingUp as TrendingUpIcon,
   TrendingDown as TrendingDownIcon,
-  Notifications as NotificationsIcon,
   Speed as SpeedIcon,
   Security as SecurityIcon,
   Analytics as AnalyticsIcon,
@@ -59,6 +58,7 @@ const AdminDashboard = () => {
   const [userStats, setUserStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [backendConnected, setBackendConnected] = useState(false);
   const { user } = useAuth();
   const theme = useTheme();
 
@@ -80,7 +80,10 @@ const AdminDashboard = () => {
         // Handle dashboard data
         if (dashboardResponse.status === "fulfilled") {
           setDashboardData(dashboardResponse.value);
+          setBackendConnected(true);
         } else {
+          console.log("Backend not connected, using mock data for dashboard");
+          setBackendConnected(false);
           // Mock data for demonstration
           setDashboardData({
             totalCases: 156,
@@ -98,7 +101,10 @@ const AdminDashboard = () => {
         // Handle messages data
         if (messagesResponse.status === "fulfilled") {
           setRecentMessages(messagesResponse.value.data || []);
+          setBackendConnected(true);
         } else {
+          console.log("Backend not connected, using mock data for messages");
+          setBackendConnected(false);
           // Mock recent messages
           setRecentMessages([
             {
@@ -303,9 +309,17 @@ const AdminDashboard = () => {
           <Typography variant="h4" gutterBottom fontWeight="bold">
             Admin Dashboard
           </Typography>
-          <Typography variant="subtitle1" color="textSecondary">
-            Welcome back, {user?.username}! Here's your system overview.
-          </Typography>
+          <Box display="flex" alignItems="center" gap={2}>
+            <Typography variant="subtitle1" color="textSecondary">
+              Welcome back, {user?.username}! Here's your system overview.
+            </Typography>
+            <Chip
+              size="small"
+              label={backendConnected ? "Backend Connected" : "Using Mock Data"}
+              color={backendConnected ? "success" : "warning"}
+              variant="outlined"
+            />
+          </Box>
         </Box>
         <Box>
           <Button
