@@ -10,6 +10,7 @@
     "lint": "eslint src/**/*.js",
     "format": "prettier --write src/**/*.js",
     "setup-db": "node src/scripts/setupDb.js",
+    "init-db": "node src/scripts/initializeDb.js",
     "cleanup": "node src/scripts/scheduleCleanup.js"
   },
   "keywords": [],
