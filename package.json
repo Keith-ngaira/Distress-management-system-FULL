@@ -78,7 +78,9 @@
     "turbo-stream": "^2.4.0",
     "yaml": "^1.10.2"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  },
   "scripts": {
     "dev": "concurrently \"npm run dev --prefix backend\" \"npm start --prefix frontend\"",
     "dev:frontend": "npm start --prefix frontend",
