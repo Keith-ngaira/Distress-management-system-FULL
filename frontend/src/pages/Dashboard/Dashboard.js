@@ -43,6 +43,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { format } from "date-fns";
 import DirectorDashboard from "./DirectorDashboard";
 import FrontOfficeDashboard from "./FrontOfficeDashboard";
+import CadetDashboard from "./CadetDashboard";
 
 const Dashboard = () => {
   const [data, setData] = useState(null);
@@ -199,6 +200,10 @@ const Dashboard = () => {
 
   if (user?.role === "front_office") {
     return <FrontOfficeDashboard />;
+  }
+
+  if (user?.role === "cadet") {
+    return <CadetDashboard />;
   }
 
   return (

@@ -4,6 +4,7 @@ import {
   mockDashboardData,
   mockDirectorData,
   mockFrontOfficeData,
+  mockCadetData,
 } from "./mockData.js";
 
 export const getDashboardData = async (req, res) => {
@@ -107,6 +108,15 @@ export const getDashboardData = async (req, res) => {
       });
     }
 
+    if (req.user?.role === "cadet") {
+      // For now, when MySQL is available, we'll use mock cadet data
+      // In production, this would fetch real cadet-specific data from database
+      return res.json({
+        success: true,
+        data: { ...baseData, ...mockCadetData },
+      });
+    }
+
     return res.json({
       success: true,
       data: baseData,
@@ -122,6 +132,8 @@ export const getDashboardData = async (req, res) => {
       responseData = mockDirectorData;
     } else if (userData?.role === "front_office") {
       responseData = mockFrontOfficeData;
+    } else if (userData?.role === "cadet") {
+      responseData = mockCadetData;
     }
 
     return res.json({
