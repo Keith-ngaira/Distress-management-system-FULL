@@ -1,55 +1,109 @@
 import mysql from "mysql2/promise";
+import sqlite3 from "sqlite3";
+import { open } from "sqlite";
 import { logger } from "./middleware/logger.js";
 import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
+import fs from "fs";
 
 dotenv.config();
 
-const poolConfig = {
-  host: process.env.DB_HOST || "localhost",
-  user: process.env.DB_USER || "root",
-  password: process.env.DB_PASSWORD || "",
-  database: process.env.DB_NAME || "distress_management",
-  port: parseInt(process.env.DB_PORT || "3306", 10),
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-  multipleStatements: true,
-};
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-logger.info("Creating MySQL database connection pool");
-const pool = mysql.createPool(poolConfig);
+let pool;
+let dbType = "mysql"; // Try MySQL first
 
-// Execute a query with error handling
-const executeQuery = async (sql, params = []) => {
-  let connection;
+// Try to connect to MySQL first, fallback to SQLite if it fails
+const initializeDatabase = async () => {
   try {
-    connection = await pool.getConnection();
-    const [results] = await connection.execute(sql, params);
-    return results;
-  } catch (error) {
-    logger.error("Query execution error:", error);
-    throw error;
-  } finally {
-    if (connection) {
-      connection.release();
-    }
-  }
-};
+    const poolConfig = {
+      host: process.env.DB_HOST || "localhost",
+      user: process.env.DB_USER || "root",
+      password: process.env.DB_PASSWORD || "",
+      database: process.env.DB_NAME || "management",
+      port: parseInt(process.env.DB_PORT || "3306", 10),
+      waitForConnections: true,
+      connectionLimit: 10,
+      queueLimit: 0,
+      multipleStatements: true,
+    };
 
-// Test the connection on startup
-(async () => {
-  try {
-    logger.info("Testing MySQL database connection");
+    logger.info("Attempting to connect to MySQL database...");
+    pool = mysql.createPool(poolConfig);
+
+    // Test the connection
     const connection = await pool.getConnection();
     await connection.query("SELECT 1");
     connection.release();
-    logger.info("MySQL database connection test successful");
+
+    logger.info("MySQL database connection successful");
+    dbType = "mysql";
   } catch (error) {
-    logger.error("MySQL database connection test failed:", error);
-    logger.error("Make sure MySQL is running and the database exists");
-    // Don't exit on connection failure, allow retries
-    logger.info("Will retry database connection on next query");
+    logger.warn(
+      "MySQL connection failed, falling back to SQLite:",
+      error.message,
+    );
+
+    // Fallback to SQLite
+    const dbPath = path.join(__dirname, "..", "database.sqlite");
+
+    pool = await open({
+      filename: dbPath,
+      driver: sqlite3.Database,
+    });
+
+    await pool.exec("PRAGMA foreign_keys = ON;");
+
+    // Check if database needs initialization
+    const tables = await pool.all(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='users'",
+    );
+    if (tables.length === 0) {
+      logger.info("Initializing SQLite database with schema...");
+      const schemaPath = path.join(__dirname, "database", "schema.sqlite.sql");
+      if (fs.existsSync(schemaPath)) {
+        const schema = fs.readFileSync(schemaPath, "utf8");
+        await pool.exec(schema);
+      }
+    }
+
+    logger.info("SQLite database connection successful");
+    dbType = "sqlite";
   }
-})();
+};
+
+// Initialize the database
+await initializeDatabase();
+
+// Execute a query with error handling
+const executeQuery = async (sql, params = []) => {
+  try {
+    if (dbType === "mysql") {
+      let connection;
+      try {
+        connection = await pool.getConnection();
+        const [results] = await connection.execute(sql, params);
+        return results;
+      } finally {
+        if (connection) {
+          connection.release();
+        }
+      }
+    } else {
+      // SQLite
+      const results = await pool.all(sql, params);
+      return results;
+    }
+  } catch (error) {
+    logger.error("Query execution error:", error);
+    throw error;
+  }
+};
+
+// Test the connection (already done during initialization)
+logger.info(`Database type: ${dbType}`);
+logger.info("Database connection initialized successfully");
 
 export { pool as default, executeQuery };
