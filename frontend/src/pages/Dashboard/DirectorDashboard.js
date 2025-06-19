@@ -55,7 +55,11 @@ import {
   PlayArrow as StartIcon,
   Info as InfoIcon,
 } from "@mui/icons-material";
-import { dashboard, users as usersApi } from "../../services/api";
+import {
+  dashboard,
+  users as usersApi,
+  caseAssignments,
+} from "../../services/api";
 import { useAuth } from "../../contexts/AuthContext";
 import { format } from "date-fns";
 
@@ -102,12 +106,32 @@ const DirectorDashboard = () => {
     setAssignDialogOpen(true);
   };
 
-  const handleAssignmentSubmit = () => {
-    // In a real application, this would make an API call to assign the case
-    console.log("Assigning case:", selectedCase, "to:", assignmentData);
-    setAssignDialogOpen(false);
-    setAssignmentData({ assignedTo: "", instructions: "" });
-    setSelectedCase(null);
+  const handleAssignmentSubmit = async () => {
+    try {
+      const assignedUser = users.find(
+        (u) => u.username === assignmentData.assignedTo,
+      );
+      if (!assignedUser) {
+        setError("Selected user not found");
+        return;
+      }
+
+      await caseAssignments.create({
+        distressMessageId: selectedCase.id,
+        assignedTo: assignedUser.id,
+        instructions: assignmentData.instructions,
+      });
+
+      // Refresh data after assignment
+      const updatedData = await dashboard.getDashboardData();
+      setData(updatedData);
+
+      setAssignDialogOpen(false);
+      setAssignmentData({ assignedTo: "", instructions: "" });
+      setSelectedCase(null);
+    } catch (err) {
+      setError("Failed to assign case: " + (err.message || "Unknown error"));
+    }
   };
 
   const getTeamMembers = () => {
