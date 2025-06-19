@@ -140,6 +140,20 @@ app.get("/health", (req, res) => {
   });
 });
 
+// Root endpoint for debugging
+app.get("/", (req, res) => {
+  res.json({
+    message: "Distress Management API is running",
+    version: "1.0.0",
+    timestamp: new Date().toISOString(),
+    endpoints: {
+      health: "/health",
+      auth: "/api/auth/*",
+      api: "/api/*",
+    },
+  });
+});
+
 app.use(requestLogger);
 
 // Add debug logging for API requests in development
