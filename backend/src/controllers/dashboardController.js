@@ -1,6 +1,10 @@
 import { executeQuery } from "../db.js";
 import { logger } from "../middleware/logger.js";
-import { mockDashboardData, mockDirectorData } from "./mockData.js";
+import {
+  mockDashboardData,
+  mockDirectorData,
+  mockFrontOfficeData,
+} from "./mockData.js";
 
 export const getDashboardData = async (req, res) => {
   try {
@@ -84,13 +88,22 @@ export const getDashboardData = async (req, res) => {
       })),
     };
 
-    // Add director-specific data when MySQL is available
+    // Add role-specific data when MySQL is available
     if (req.user?.role === "director") {
       // For now, when MySQL is available, we'll use mock director data
       // In production, this would fetch real director-specific data from database
       return res.json({
         success: true,
         data: { ...baseData, ...mockDirectorData },
+      });
+    }
+
+    if (req.user?.role === "front_office") {
+      // For now, when MySQL is available, we'll use mock front office data
+      // In production, this would fetch real front office-specific data from database
+      return res.json({
+        success: true,
+        data: { ...baseData, ...mockFrontOfficeData },
       });
     }
 
@@ -103,8 +116,13 @@ export const getDashboardData = async (req, res) => {
 
     // Fallback to mock data when MySQL is unavailable
     const userData = req.user;
-    const responseData =
-      userData?.role === "director" ? mockDirectorData : mockDashboardData;
+    let responseData = mockDashboardData;
+
+    if (userData?.role === "director") {
+      responseData = mockDirectorData;
+    } else if (userData?.role === "front_office") {
+      responseData = mockFrontOfficeData;
+    }
 
     return res.json({
       success: true,
