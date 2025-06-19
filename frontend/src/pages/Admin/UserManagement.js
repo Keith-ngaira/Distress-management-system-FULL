@@ -104,7 +104,7 @@ const UserManagement = () => {
 
   useEffect(() => {
     filterUsers();
-  }, [users, searchTerm, roleFilter, statusFilter]); // filterUsers is stable, so this is safe
+  }, [users, searchTerm, roleFilter, statusFilter, filterUsers]); // Added filterUsers to dependencies
 
   const fetchUsers = async () => {
     try {
