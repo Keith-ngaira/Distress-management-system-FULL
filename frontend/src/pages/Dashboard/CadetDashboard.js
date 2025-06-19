@@ -47,7 +47,7 @@ import {
   Star as StarIcon,
   Book as BookIcon,
   Quiz as QuizIcon,
-  Certificate as CertificateIcon,
+  Verified as CertificateIcon,
   Notifications as NotificationIcon,
   Update as UpdateIcon,
   Send as SendIcon,
