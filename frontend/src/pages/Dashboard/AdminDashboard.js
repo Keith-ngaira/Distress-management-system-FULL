@@ -595,21 +595,23 @@ const AdminDashboard = () => {
                       <AnalyticsIcon fontSize="small" />
                     </Avatar>
                   </ListItemAvatar>
-                  <ListItemText
-                    primary="System Load"
-                    secondary={
-                      <Box>
-                        <Typography variant="body2">
-                          {systemMetrics?.systemLoad}%
-                        </Typography>
-                        <LinearProgress
-                          variant="determinate"
-                          value={systemMetrics?.systemLoad || 0}
-                          sx={{ mt: 1 }}
-                        />
-                      </Box>
-                    }
-                  />
+                  <Box sx={{ flex: 1 }}>
+                    <Typography variant="body1" component="div">
+                      System Load
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      color="textSecondary"
+                      component="div"
+                    >
+                      {systemMetrics?.systemLoad}%
+                    </Typography>
+                    <LinearProgress
+                      variant="determinate"
+                      value={systemMetrics?.systemLoad || 0}
+                      sx={{ mt: 1 }}
+                    />
+                  </Box>
                 </ListItem>
               </List>
             </Paper>
