@@ -19,7 +19,7 @@ npm run setup-db
 mysql -u root -p < backend/src/database/schema.sql
 ```
 
-Enter your password: `diorsassy254`
+Enter your password: ` `
 
 ## 📁 **What's Included in schema.sql**
 
@@ -59,7 +59,7 @@ Enter your password: `diorsassy254`
 ```env
 DB_HOST=localhost
 DB_USER=root
-DB_PASSWORD=diorsassy254
+DB_PASSWORD=
 DB_NAME=management
 DB_PORT=3306
 ```
@@ -67,7 +67,7 @@ DB_PORT=3306
 ### **Connection String**
 
 ```
-mysql://root:diorsassy254@localhost:3306/management
+mysql://root:(yourpassword)@localhost:3306/management
 ```
 
 ## 🧪 **Verification Steps**
