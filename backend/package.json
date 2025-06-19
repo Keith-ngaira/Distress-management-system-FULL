@@ -12,6 +12,7 @@
     "setup-db": "node src/scripts/setupDb.js",
     "setup-mysql": "node src/scripts/setupMysqlDb.js",
     "init-db": "node src/scripts/initializeDb.js",
+    "check-users": "node src/scripts/checkUsers.js",
     "cleanup": "node src/scripts/scheduleCleanup.js"
   },
   "keywords": [],
