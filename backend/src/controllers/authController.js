@@ -81,7 +81,7 @@ export const login = async (req, res) => {
         user = users[0];
       }
     } catch (dbError) {
-      console.error('Database error, using mock data for login:', dbError);
+      console.error("Database error, using mock data for login:", dbError);
 
       // Fallback to mock data
       const mockUser = findUserByUsername(username);
@@ -136,10 +136,9 @@ export const login = async (req, res) => {
         [user.id],
       );
     } catch (dbError) {
-      console.error('Could not update last login (using mock data):', dbError);
+      console.error("Could not update last login (using mock data):", dbError);
       // For mock data, we don't need to update last login
     }
-    );
 
     const { password: _, ...userWithoutPassword } = user;
 
