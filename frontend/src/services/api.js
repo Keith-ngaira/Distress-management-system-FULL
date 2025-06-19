@@ -6,6 +6,13 @@ const API_BASE_URL = isBuilderProxy
   ? "" // Use relative URL for proxy
   : process.env.REACT_APP_API_URL || "http://localhost:5556";
 
+console.log("API Configuration:", {
+  isBuilderProxy,
+  hostname: window.location.hostname,
+  API_BASE_URL,
+  environment: process.env.NODE_ENV,
+});
+
 // Create axios instance with default config
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -22,17 +29,40 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    console.log("API Request:", {
+      method: config.method?.toUpperCase(),
+      url: config.url,
+      baseURL: config.baseURL,
+      fullURL: `${config.baseURL}${config.url}`,
+    });
     return config;
   },
   (error) => {
+    console.error("Request interceptor error:", error);
     return Promise.reject(error);
   },
 );
 
 // Response interceptor for handling errors
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log("API Response:", {
+      status: response.status,
+      url: response.config.url,
+      data: response.data,
+    });
+    return response;
+  },
   async (error) => {
+    console.error("API Error Details:", {
+      message: error.message,
+      code: error.code,
+      status: error.response?.status,
+      url: error.config?.url,
+      baseURL: error.config?.baseURL,
+      fullURL: error.config?.baseURL + error.config?.url,
+    });
+
     const originalRequest = error.config;
 
     // Handle token expiration
