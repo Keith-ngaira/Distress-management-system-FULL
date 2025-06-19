@@ -93,17 +93,35 @@ api.interceptors.response.use(
 // Auth endpoints
 export const auth = {
   login: async (username, password) => {
-    const response = await api.post("/api/auth/login", { username, password });
-    const { data } = response;
-    if (!data?.success || !data?.data?.token || !data?.data?.user) {
-      throw new Error(data?.message || "Invalid response format from server");
+    try {
+      const response = await api.post("/api/auth/login", {
+        username,
+        password,
+      });
+      const { data } = response;
+
+      // Check if response indicates success with proper data structure
+      if (data?.success && data?.data?.token && data?.data?.user) {
+        // Store both token and user data
+        localStorage.setItem("token", data.data.token);
+        localStorage.setItem("user", JSON.stringify(data.data.user));
+        return data;
+      } else {
+        // Handle error responses from server
+        throw new Error(data?.message || "Invalid credentials or server error");
+      }
+    } catch (error) {
+      // Handle network errors or server errors
+      if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      } else if (error.message) {
+        throw new Error(error.message);
+      } else {
+        throw new Error(
+          "Failed to connect to server. Please check if the backend is running.",
+        );
+      }
     }
-
-    // Store both token and user data
-    localStorage.setItem("token", data.data.token);
-    localStorage.setItem("user", JSON.stringify(data.data.user));
-
-    return data;
   },
   logout: () => {
     localStorage.removeItem("token");

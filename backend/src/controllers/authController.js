@@ -10,6 +10,42 @@ const LOCKOUT_DURATION = 15; // minutes
 // In-memory store for failed login attempts (should be moved to Redis in production)
 const failedLoginAttempts = new Map();
 
+// Temporary in-memory users for development when database is not available
+const tempUsers = [
+  {
+    id: 1,
+    username: "admin",
+    password: "$2b$10$NKxDv2xBS3.Pc0mMHlATQuMi.auxS0Gaoers5FqPFtqejiNRK/OYm", // admin123
+    email: "admin@example.com",
+    role: "admin",
+    is_active: true,
+  },
+  {
+    id: 2,
+    username: "director",
+    password: "$2b$10$66.a0QLBw5BjeEPAqFMcUuQBApkvJ5yKb3fNCKIdl/o.iT29A2Dna", // director123
+    email: "director@example.com",
+    role: "director",
+    is_active: true,
+  },
+  {
+    id: 3,
+    username: "frontoffice",
+    password: "$2b$10$pk/89H4ej95La1swZcjvLeRD6NKg8TP7xo/YiGuVR3hGA2YYBrM1.", // frontoffice123
+    email: "frontoffice@example.com",
+    role: "front_office",
+    is_active: true,
+  },
+  {
+    id: 4,
+    username: "cadet",
+    password: "$2b$10$NXHZpOFqqeCfJh5DLN.RnuwckhJEwLybEk6sCYEisKacrncZC/kwW", // cadet123
+    email: "cadet@example.com",
+    role: "cadet",
+    is_active: true,
+  },
+];
+
 const incrementLoginAttempts = (username) => {
   const now = Date.now();
   const attempts = failedLoginAttempts.get(username) || {
@@ -67,10 +103,24 @@ export const login = async (req, res) => {
       });
     }
 
-    const users = await executeQuery(
-      "SELECT * FROM users WHERE username = ? AND is_active = TRUE",
-      [username],
-    );
+    let users;
+    let usingTempUsers = false;
+
+    // Try database first
+    try {
+      users = await executeQuery(
+        "SELECT * FROM users WHERE username = ? AND is_active = TRUE",
+        [username],
+      );
+    } catch (dbError) {
+      console.error(
+        "Database connection error, using temporary users:",
+        dbError.message,
+      );
+      // Fallback to temporary users
+      users = tempUsers.filter((u) => u.username === username && u.is_active);
+      usingTempUsers = true;
+    }
 
     if (users.length === 0) {
       incrementLoginAttempts(username);
@@ -113,17 +163,23 @@ export const login = async (req, res) => {
       process.env.JWT_SECRET,
     );
 
-    // Update last login
-    await executeQuery(
-      "UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?",
-      [user.id],
-    );
+    // Update last login (only if using database)
+    if (!usingTempUsers) {
+      try {
+        await executeQuery(
+          "UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?",
+          [user.id],
+        );
+      } catch (updateError) {
+        console.warn("Could not update last_login:", updateError.message);
+      }
+    }
 
     const { password: _, ...userWithoutPassword } = user;
 
     res.json({
       success: true,
-      message: "Login successful",
+      message: `Login successful${usingTempUsers ? " (using temporary authentication)" : ""}`,
       data: {
         user: userWithoutPassword,
         token,
@@ -182,82 +238,92 @@ export const register = async (req, res) => {
       });
     }
 
-    // Check if any users exist
-    const [existingUsers] = await executeQuery(
-      "SELECT COUNT(*) as count FROM users",
-    );
-    const isFirstUser = existingUsers[0].count === 0;
+    // Try database operation
+    try {
+      // Check if any users exist
+      const existingUsers = await executeQuery(
+        "SELECT COUNT(*) as count FROM users",
+      );
+      const isFirstUser = existingUsers[0].count === 0;
 
-    // If this is not the first user, only admin can register new users
-    if (!isFirstUser && (!req.user || req.user.role !== "admin")) {
-      return res.status(403).json({
+      // If this is not the first user, only admin can register new users
+      if (!isFirstUser && (!req.user || req.user.role !== "admin")) {
+        return res.status(403).json({
+          success: false,
+          message: "Only admin can register new users",
+        });
+      }
+
+      // If this is not the first user and the role is admin, only existing admin can create new admins
+      if (
+        !isFirstUser &&
+        role === "admin" &&
+        (!req.user || req.user.role !== "admin")
+      ) {
+        return res.status(403).json({
+          success: false,
+          message: "Only existing admin can create new admin users",
+        });
+      }
+
+      // Check if user already exists
+      const existingUser = await executeQuery(
+        "SELECT id, username, email FROM users WHERE username = ? OR email = ?",
+        [username, email],
+      );
+
+      if (existingUser.length) {
+        const field =
+          existingUser[0].username === username ? "username" : "email";
+        return res.status(400).json({
+          success: false,
+          message: `User with this ${field} already exists`,
+        });
+      }
+
+      // For the first user, force role to be admin
+      const userRole = isFirstUser ? "admin" : role;
+
+      // Hash password
+      const salt = await bcrypt.genSalt(12);
+      const hashedPassword = await bcrypt.hash(password, salt);
+
+      // Insert new user
+      const result = await executeQuery(
+        `INSERT INTO users (
+                    username,
+                    password,
+                    email,
+                    role,
+                    is_active,
+                    created_at
+                ) VALUES (?, ?, ?, ?, TRUE, CURRENT_TIMESTAMP)`,
+        [username, hashedPassword, email, userRole],
+      );
+
+      // Get the created user
+      const newUser = await executeQuery(
+        "SELECT id, username, email, role, created_at FROM users WHERE id = ?",
+        [result.insertId],
+      );
+
+      res.status(201).json({
+        success: true,
+        message: isFirstUser
+          ? "First admin user registered successfully"
+          : "User registered successfully",
+        data: {
+          user: newUser[0],
+        },
+      });
+    } catch (dbError) {
+      console.error("Database error during registration:", dbError);
+      return res.status(503).json({
         success: false,
-        message: "Only admin can register new users",
+        message:
+          "Database connection error. Registration requires database access.",
       });
     }
-
-    // If this is not the first user and the role is admin, only existing admin can create new admins
-    if (
-      !isFirstUser &&
-      role === "admin" &&
-      (!req.user || req.user.role !== "admin")
-    ) {
-      return res.status(403).json({
-        success: false,
-        message: "Only existing admin can create new admin users",
-      });
-    }
-
-    // Check if user already exists
-    const [existingUser] = await executeQuery(
-      "SELECT id, username, email FROM users WHERE username = ? OR email = ?",
-      [username, email],
-    );
-
-    if (existingUser.length) {
-      const field =
-        existingUser[0].username === username ? "username" : "email";
-      return res.status(400).json({
-        success: false,
-        message: `User with this ${field} already exists`,
-      });
-    }
-
-    // For the first user, force role to be admin
-    const userRole = isFirstUser ? "admin" : role;
-
-    // Hash password
-    const salt = await bcrypt.genSalt(12);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    // Insert new user
-    const [result] = await executeQuery(
-      `INSERT INTO users (
-                username,
-                password,
-                email,
-                role,
-                is_active,
-                created_at
-            ) VALUES (?, ?, ?, ?, TRUE, CURRENT_TIMESTAMP)`,
-      [username, hashedPassword, email, userRole],
-    );
-
-    // Get the created user
-    const [newUser] = await executeQuery(
-      "SELECT id, username, email, role, created_at FROM users WHERE id = ?",
-      [result.insertId],
-    );
-
-    res.status(201).json({
-      success: true,
-      message: isFirstUser
-        ? "First admin user registered successfully"
-        : "User registered successfully",
-      data: {
-        user: newUser[0],
-      },
-    });
   } catch (error) {
     console.error("Registration error:", error);
     res.status(500).json({
@@ -280,60 +346,72 @@ export const changePassword = async (req, res) => {
 
     const userId = req.user.id;
 
-    // Get user's current password
-    const [users] = await executeQuery(
-      "SELECT password FROM users WHERE id = ? AND is_active = TRUE",
-      [userId],
-    );
+    try {
+      // Get user's current password
+      const users = await executeQuery(
+        "SELECT password FROM users WHERE id = ? AND is_active = TRUE",
+        [userId],
+      );
 
-    if (!users.length) {
-      return res.status(404).json({
+      if (!users.length) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found or inactive",
+        });
+      }
+
+      const validPassword = await bcrypt.compare(
+        currentPassword,
+        users[0].password,
+      );
+
+      if (!validPassword) {
+        return res.status(401).json({
+          success: false,
+          message: "Current password is incorrect",
+        });
+      }
+
+      // Prevent reuse of current password
+      const isSamePassword = await bcrypt.compare(
+        newPassword,
+        users[0].password,
+      );
+      if (isSamePassword) {
+        return res.status(400).json({
+          success: false,
+          message: "New password must be different from current password",
+        });
+      }
+
+      // Hash new password
+      const salt = await bcrypt.genSalt(12);
+      const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+      // Update password and revoke all existing tokens
+      await executeQuery(
+        "UPDATE users SET password = ?, password_changed_at = CURRENT_TIMESTAMP WHERE id = ?",
+        [hashedPassword, userId],
+      );
+
+      // Revoke current token to force re-login with new password
+      if (req.token) {
+        revokeToken(req.token);
+      }
+
+      res.json({
+        success: true,
+        message:
+          "Password changed successfully. Please log in with your new password.",
+      });
+    } catch (dbError) {
+      console.error("Database error during password change:", dbError);
+      return res.status(503).json({
         success: false,
-        message: "User not found or inactive",
+        message:
+          "Database connection error. Password change requires database access.",
       });
     }
-
-    const validPassword = await bcrypt.compare(
-      currentPassword,
-      users[0].password,
-    );
-
-    if (!validPassword) {
-      return res.status(401).json({
-        success: false,
-        message: "Current password is incorrect",
-      });
-    }
-
-    // Prevent reuse of current password
-    const isSamePassword = await bcrypt.compare(newPassword, users[0].password);
-    if (isSamePassword) {
-      return res.status(400).json({
-        success: false,
-        message: "New password must be different from current password",
-      });
-    }
-
-    // Hash new password
-    const salt = await bcrypt.genSalt(12);
-    const hashedPassword = await bcrypt.hash(newPassword, salt);
-
-    // Update password and revoke all existing tokens
-    await executeQuery(
-      "UPDATE users SET password = ?, password_changed_at = CURRENT_TIMESTAMP WHERE id = ?",
-      [hashedPassword, userId],
-    );
-
-    // Revoke current token to force re-login with new password
-    if (req.token) {
-      revokeToken(req.token);
-    }
-
-    res.json({
-      success: true,
-      message:
-        "Password changed successfully. Please log in with your new password.",
-    });
   } catch (error) {
     console.error("Change password error:", error);
     res.status(500).json({
