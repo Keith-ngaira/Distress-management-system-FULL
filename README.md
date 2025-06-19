@@ -5,22 +5,26 @@ A comprehensive web application for managing and responding to distress messages
 ## Features
 
 - **User Authentication & Authorization**
+
   - Role-based access control (Admin, Director, Front Office, Cadet)
   - Secure JWT-based authentication
   - Password encryption and security measures
 
 - **Distress Message Management**
+
   - Create and track distress messages
   - Assign cases to specific users
   - Priority-based case handling
   - Case updates and resolution tracking
 
 - **Real-time Notifications**
+
   - Instant notifications for new assignments
   - Case update notifications
   - Unread notification tracking
 
 - **Dashboard & Analytics**
+
   - Case statistics and metrics
   - Performance tracking
   - Status-based case filtering
@@ -33,6 +37,7 @@ A comprehensive web application for managing and responding to distress messages
 ## Tech Stack
 
 ### Frontend
+
 - React.js
 - Material-UI (MUI)
 - React Query for data fetching
@@ -40,6 +45,7 @@ A comprehensive web application for managing and responding to distress messages
 - Axios for API communication
 
 ### Backend
+
 - Node.js & Express.js
 - MySQL database
 - JWT for authentication
@@ -49,6 +55,7 @@ A comprehensive web application for managing and responding to distress messages
 ## Getting Started
 
 ### Prerequisites
+
 - Node.js (v14 or higher)
 - MySQL (v8 or higher)
 - Git
@@ -56,12 +63,14 @@ A comprehensive web application for managing and responding to distress messages
 ### Installation
 
 1. Clone the repository:
+
 ```bash
 git clone https://github.com/Keith-ngaira/Distress-management-system-FULL.git
 cd Distress-management-system-FULL
 ```
 
 2. Install backend dependencies:
+
 ```bash
 cd backend
 npm install
@@ -70,6 +79,7 @@ npm install
 3. Set up backend environment variables:
    - Create a .env file in the backend directory
    - Add the following variables:
+
 ```makefile
 PORT=5556
 DB_HOST=localhost
@@ -83,12 +93,17 @@ FRONTEND_URL=http://localhost:3002
 ```
 
 4. Initialize the database:
+
 ```bash
-# Run the schema.sql file in your MySQL server
-mysql -u your_user -p management < src/database/schema.sql
+# Option 1: Automated setup (recommended)
+npm run setup-db
+
+# Option 2: Manual import
+mysql -u your_user -p < src/database/schema.sql
 ```
 
 5. Install frontend dependencies:
+
 ```bash
 cd ../frontend
 npm install
@@ -97,6 +112,7 @@ npm install
 6. Set up frontend environment variables:
    - Create a .env file in the frontend directory
    - Add:
+
 ```makefile
 REACT_APP_API_URL=http://localhost:5556
 PORT=3002
@@ -105,24 +121,28 @@ PORT=3002
 ### Running the Application
 
 1. Start the backend server:
+
 ```bash
 cd backend
 npm run start
 ```
 
 2. Start the frontend development server:
+
 ```bash
 cd frontend
 npm start
 ```
 
 The application will be available at:
+
 - Frontend: http://localhost:3002
 - Backend API: http://localhost:5556
 
 ### Default Users
 
 The system comes with pre-configured users:
+
 - Admin: username: admin, password: admin123
 - Director: username: director, password: director123
 - Front Office: username: frontoffice, password: frontoffice123
@@ -155,6 +175,7 @@ distress-management-system/
 ## Documentation
 
 Detailed documentation is available in the docs directory:
+
 - [System Overview](docs/01-system-overview.md)
 - [User Roles & Permissions](docs/02-user-roles-and-permissions.md)
 - [Workflows](docs/03-workflows.md)
