@@ -30,7 +30,6 @@ import {
 import {
   Add as AddIcon,
   Edit as EditIcon,
-  Delete as DeleteIcon,
   Person as PersonIcon,
   AdminPanelSettings as AdminIcon,
   Business as DirectorIcon,
