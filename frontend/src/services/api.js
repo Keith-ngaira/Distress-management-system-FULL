@@ -351,6 +351,42 @@ export const dashboard = {
   },
 };
 
+// Case Assignment endpoints (Director functionality)
+export const caseAssignments = {
+  getAll: async () => {
+    const response = await api.get("/api/case-assignments");
+    const { data } = response;
+    if (!data?.success || !data?.data) {
+      throw new Error(data?.message || "Invalid response format from server");
+    }
+    return data.data;
+  },
+  create: async (assignmentData) => {
+    const response = await api.post("/api/case-assignments", assignmentData);
+    const { data } = response;
+    if (!data?.success || !data?.data) {
+      throw new Error(data?.message || "Invalid response format from server");
+    }
+    return data.data;
+  },
+  update: async (id, updateData) => {
+    const response = await api.put(`/api/case-assignments/${id}`, updateData);
+    const { data } = response;
+    if (!data?.success || !data?.data) {
+      throw new Error(data?.message || "Invalid response format from server");
+    }
+    return data.data;
+  },
+  getTeamWorkload: async () => {
+    const response = await api.get("/api/case-assignments/team-workload");
+    const { data } = response;
+    if (!data?.success || !data?.data) {
+      throw new Error(data?.message || "Invalid response format from server");
+    }
+    return data.data;
+  },
+};
+
 // Add error boundary for API calls
 const withErrorBoundary = (apiCall) => {
   return async (...args) => {
