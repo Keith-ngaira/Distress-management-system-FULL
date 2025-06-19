@@ -54,7 +54,7 @@ import {
   Visibility as ViewIcon,
   Close as CloseIcon,
 } from "@mui/icons-material";
-import { users as usersApi } from "../../services/api";
+import { users as usersApi, register } from "../../services/api";
 import { useAuth } from "../../contexts/AuthContext";
 import { format } from "date-fns";
 
