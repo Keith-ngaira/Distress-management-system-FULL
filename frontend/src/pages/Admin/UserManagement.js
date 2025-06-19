@@ -31,7 +31,6 @@ import {
   Card,
   CardContent,
   Fab,
-  Tooltip,
   InputAdornment,
   Menu,
   MenuList,
@@ -45,16 +44,14 @@ import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   Search as SearchIcon,
-  FilterList as FilterIcon,
   MoreVert as MoreVertIcon,
   Person as PersonIcon,
   AdminPanelSettings as AdminIcon,
   Engineering as EngineeringIcon,
   Support as SupportIcon,
-  Visibility as ViewIcon,
   Close as CloseIcon,
 } from "@mui/icons-material";
-import { users as usersApi, register } from "../../services/api";
+import { users as usersApi } from "../../services/api";
 import { useAuth } from "../../contexts/AuthContext";
 import { format } from "date-fns";
 
@@ -107,7 +104,7 @@ const UserManagement = () => {
 
   useEffect(() => {
     filterUsers();
-  }, [users, searchTerm, roleFilter, statusFilter]);
+  }, [users, searchTerm, roleFilter, statusFilter]); // filterUsers is stable, so this is safe
 
   const fetchUsers = async () => {
     try {
