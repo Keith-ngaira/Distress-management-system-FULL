@@ -41,6 +41,7 @@ import {
 import { dashboard, users as usersApi } from "../../services/api";
 import { useAuth } from "../../contexts/AuthContext";
 import { format } from "date-fns";
+import DirectorDashboard from "./DirectorDashboard";
 
 const Dashboard = () => {
   const [data, setData] = useState(null);
@@ -189,6 +190,11 @@ const Dashboard = () => {
       {value === index && <Box sx={{ pt: 3 }}>{children}</Box>}
     </div>
   );
+
+  // Show director-specific dashboard for directors
+  if (user?.role === "director") {
+    return <DirectorDashboard />;
+  }
 
   return (
     <Box p={3}>
