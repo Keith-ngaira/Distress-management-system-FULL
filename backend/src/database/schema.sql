@@ -151,8 +151,8 @@ CREATE TABLE IF NOT EXISTS cleanup_events (
     INDEX idx_event_type (event_type)
 );
 
--- Insert initial users with email addresses
-INSERT INTO users (username, password, email, role, created_at) VALUES
+-- Insert initial users with email addresses (passwords match README: admin123, director123, etc.)
+INSERT IGNORE INTO users (username, password, email, role, created_at) VALUES
 ('admin', '$2b$10$NKxDv2xBS3.Pc0mMHlATQuMi.auxS0Gaoers5FqPFtqejiNRK/OYm', 'admin@example.com', 'admin', '2025-02-23 17:07:25'),
 ('director', '$2b$10$66.a0QLBw5BjeEPAqFMcUuQBApkvJ5yKb3fNCKIdl/o.iT29A2Dna', 'director@example.com', 'director', '2025-02-23 17:07:25'),
 ('frontoffice', '$2b$10$pk/89H4ej95La1swZcjvLeRD6NKg8TP7xo/YiGuVR3hGA2YYBrM1.', 'frontoffice@example.com', 'front_office', '2025-02-23 17:07:25'),

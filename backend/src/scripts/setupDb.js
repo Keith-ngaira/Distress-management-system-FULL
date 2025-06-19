@@ -1,156 +1,110 @@
-import bcrypt from 'bcrypt';
-import mysql from 'mysql2/promise';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import dotenv from 'dotenv';
+import mysql from "mysql2/promise";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+import { logger } from "../middleware/logger.js";
+import dotenv from "dotenv";
 
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const users = [
-    { username: 'admin', password: 'admin123', role: 'admin', email: 'admin@example.com' },
-    { username: 'director', password: 'director123', role: 'director', email: 'director@example.com' },
-    { username: 'frontoffice', password: 'frontoffice123', role: 'front_office', email: 'frontoffice@example.com' },
-    { username: 'cadet', password: 'cadet123', role: 'cadet', email: 'cadet@example.com' }
-];
+const setupDatabase = async () => {
+  let connection;
 
-// Create a separate connection for initialization that doesn't require an existing database
-const initConnection = async () => {
-    const config = {
-        host: process.env.DB_HOST || 'localhost',
-        user: process.env.DB_USER || 'root',
-        password: process.env.DB_PASSWORD,
-        waitForConnections: true,
-        ssl: process.env.NODE_ENV === 'production' ? {
-            rejectUnauthorized: true,
-            minVersion: 'TLSv1.2'
-        } : undefined
+  try {
+    logger.info("Starting database setup...");
+
+    // Connect to MySQL server
+    const connectionConfig = {
+      host: process.env.DB_HOST || "localhost",
+      user: process.env.DB_USER || "root",
+      password: process.env.DB_PASSWORD || "",
+      port: parseInt(process.env.DB_PORT || "3306", 10),
+      multipleStatements: true,
     };
 
-    try {
-        return await mysql.createConnection(config);
-    } catch (error) {
-        console.error('Failed to create initialization connection:', error);
-        throw error;
+    logger.info(
+      `Connecting to MySQL at ${connectionConfig.host}:${connectionConfig.port} as ${connectionConfig.user}`,
+    );
+
+    connection = await mysql.createConnection(connectionConfig);
+    logger.info("Connected to MySQL server successfully");
+
+    // Create database if it doesn't exist
+    const dbName = process.env.DB_NAME || "management";
+    logger.info(`Creating database: ${dbName}`);
+    await connection.execute(`CREATE DATABASE IF NOT EXISTS \`${dbName}\``);
+    logger.info(`Database '${dbName}' created or already exists`);
+
+    // Use the database
+    await connection.execute(`USE \`${dbName}\``);
+
+    // Read and execute schema
+    const schemaPath = path.join(__dirname, "..", "database", "schema.sql");
+    const schema = fs.readFileSync(schemaPath, "utf8");
+
+    logger.info("Executing database schema...");
+
+    // Split the schema into individual statements and execute them
+    const statements = schema
+      .split(";")
+      .filter((statement) => statement.trim().length > 0);
+
+    for (let i = 0; i < statements.length; i++) {
+      const statement = statements[i].trim();
+      if (statement) {
+        try {
+          await connection.execute(statement);
+          logger.info(`Executed statement ${i + 1}/${statements.length}`);
+        } catch (error) {
+          // Log but continue with next statement (for INSERT statements that might already exist)
+          if (error.code !== "ER_DUP_ENTRY") {
+            logger.warn(`Warning on statement ${i + 1}: ${error.message}`);
+          }
+        }
+      }
     }
+
+    // Test with a simple query
+    const [result] = await connection.execute(
+      "SELECT COUNT(*) as user_count FROM users",
+    );
+    logger.info(
+      `Database setup completed! Found ${result[0].user_count} users in the system.`,
+    );
+
+    logger.info("Test users available:");
+    logger.info("  admin/admin123 (admin)");
+    logger.info("  director/director123 (director)");
+    logger.info("  frontoffice/frontoffice123 (front_office)");
+    logger.info("  cadet/cadet123 (cadet)");
+  } catch (error) {
+    logger.error("Error setting up database:", error);
+
+    if (error.code === "ECONNREFUSED") {
+      logger.error("Connection refused. Please ensure:");
+      logger.error("1. MySQL server is running");
+      logger.error("2. MySQL is listening on port 3306");
+      logger.error("3. Check your MySQL service status");
+    } else if (error.code === "ER_ACCESS_DENIED_ERROR") {
+      logger.error("Access denied. Please check:");
+      logger.error("1. Username and password in .env file");
+      logger.error("2. User has sufficient privileges");
+    }
+
+    throw error;
+  } finally {
+    if (connection) {
+      await connection.end();
+    }
+  }
 };
 
-async function setupDatabase() {
-    let connection;
-    
-    try {
-        // Create initial connection
-        connection = await initConnection();
-        console.log('Connected to MySQL server');
-
-        // Create and use database
-        await connection.query('CREATE DATABASE IF NOT EXISTS ??', [process.env.DB_NAME || 'management']);
-        await connection.query('USE ??', [process.env.DB_NAME || 'management']);
-        console.log('Using database:', process.env.DB_NAME || 'management');
-
-        // Drop existing tables if --force flag is provided
-        if (process.argv.includes('--force')) {
-            console.log('\nForce flag detected. Dropping existing tables...');
-            const dropTables = [
-                'cleanup_events',
-                'audit_logs',
-                'notifications',
-                'attachments',
-                'case_assignments',
-                'case_updates',
-                'distress_messages',
-                'users'
-            ];
-            
-            for (const table of dropTables) {
-                try {
-                    await connection.query(`DROP TABLE IF EXISTS ${table}`);
-                    console.log(`Dropped table: ${table}`);
-                } catch (error) {
-                    console.error(`Error dropping table ${table}:`, error);
-                }
-            }
-        }
-
-        // Read and execute schema.sql
-        const schemaPath = path.join(__dirname, '../database/schema.sql');
-        const schemaSql = fs.readFileSync(schemaPath, 'utf8');
-        const statements = schemaSql
-            .split(';')
-            .filter(stmt => stmt.trim())
-            .map(stmt => stmt.trim() + ';');
-        
-        console.log('\nCreating database schema...');
-        for (const statement of statements) {
-            if (statement.trim()) {
-                try {
-                    await connection.query(statement);
-                    console.log('Successfully executed:', statement.substring(0, 50) + '...');
-                } catch (error) {
-                    if (!error.message.includes('already exists')) {
-                        throw error;
-                    }
-                    console.log('Table already exists, skipping...');
-                }
-            }
-        }
-        console.log('Database schema created successfully');
-
-        // Create users only if --force flag was used or users table is empty
-        const [existingUsers] = await connection.query('SELECT COUNT(*) as count FROM users');
-        if (process.argv.includes('--force') || existingUsers[0].count === 0) {
-            console.log('\nCreating default users...');
-            for (const user of users) {
-                const salt = await bcrypt.genSalt(10);
-                const hashedPassword = await bcrypt.hash(user.password, salt);
-
-                try {
-                    await connection.execute(
-                        'INSERT INTO users (username, password, email, role) VALUES (?, ?, ?, ?)',
-                        [user.username, hashedPassword, user.email, user.role]
-                    );
-                    console.log(`Created user: ${user.username} with role: ${user.role}`);
-                } catch (error) {
-                    if (error.code === 'ER_DUP_ENTRY') {
-                        console.log(`User ${user.username} already exists, skipping...`);
-                    } else {
-                        throw error;
-                    }
-                }
-            }
-
-            console.log('\nAll users created successfully!');
-            console.log('\nTest credentials:');
-            users.forEach(user => {
-                console.log(`\nUsername: ${user.username}`);
-                console.log(`Password: ${user.password}`);
-                console.log(`Role: ${user.role}`);
-            });
-        } else {
-            console.log('\nUsers already exist, skipping user creation...');
-        }
-
-    } catch (error) {
-        console.error('Error:', error);
-        process.exit(1);
-    } finally {
-        if (connection) {
-            await connection.end();
-        }
-        process.exit();
-    }
+// Run if called directly
+if (import.meta.url === `file://${process.argv[1]}`) {
+  setupDatabase().catch(() => process.exit(1));
 }
 
-// Validate required environment variables
-const requiredEnvVars = ['DB_PASSWORD'];
-const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
-
-if (missingEnvVars.length > 0) {
-    console.error('Missing required environment variables:', missingEnvVars.join(', '));
-    process.exit(1);
-}
-
-setupDatabase();
+export default setupDatabase;
