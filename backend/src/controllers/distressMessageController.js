@@ -1,4 +1,5 @@
 import notificationService from "../services/notificationService.js";
+import { executeQuery } from "../db.js";
 
 class DistressMessageController {
   constructor() {
@@ -57,43 +58,26 @@ class DistressMessageController {
   }
 
   // Generic method to get paginated and filtered results
-  async list(
-    pool,
-    { filters = {}, page = 1, limit = 10, sortBy, sortOrder } = {},
-  ) {
+  async list({ filters = {}, page = 1, limit = 10, sortBy, sortOrder } = {}) {
     try {
       const { whereClause, values } = this.buildWhereClause(filters);
       const orderClause = this.buildOrderClause(sortBy, sortOrder);
       const limitClause = this.buildLimitClause(page, limit);
 
       // Get total count
-      const countResult = (await pool.execute)
-        ? (
-            await pool.execute(
-              `SELECT COUNT(*) as total FROM ${this.tableName} ${whereClause}`,
-              values,
-            )
-          )[0]
-        : await pool.all(
-            `SELECT COUNT(*) as total FROM ${this.tableName} ${whereClause}`,
-            values,
-          );
+      const countResult = await executeQuery(
+        `SELECT COUNT(*) as total FROM ${this.tableName} ${whereClause}`,
+        values,
+      );
       const total = Array.isArray(countResult)
         ? countResult[0].total
         : countResult.total;
 
       // Get paginated data
-      const data = (await pool.execute)
-        ? (
-            await pool.execute(
-              `SELECT * FROM ${this.tableName} ${whereClause} ${orderClause} ${limitClause}`,
-              [...values, limit, (page - 1) * limit],
-            )
-          )[0]
-        : await pool.all(
-            `SELECT * FROM ${this.tableName} ${whereClause} ${orderClause} ${limitClause}`,
-            [...values, limit, (page - 1) * limit],
-          );
+      const data = await executeQuery(
+        `SELECT * FROM ${this.tableName} ${whereClause} ${orderClause} ${limitClause}`,
+        [...values, limit, (page - 1) * limit],
+      );
 
       return {
         data,
