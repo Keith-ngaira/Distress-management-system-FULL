@@ -1,6 +1,10 @@
 import axios from "axios";
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5556";
+// Detect if running in Builder.io proxy environment
+const isBuilderProxy = window.location.hostname.includes("builder.codes");
+const API_BASE_URL = isBuilderProxy
+  ? "" // Use relative URL for proxy
+  : process.env.REACT_APP_API_URL || "http://localhost:5556";
 
 // Create axios instance with default config
 const api = axios.create({
