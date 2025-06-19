@@ -206,6 +206,17 @@ export const distressMessages = {
     }
     return data.data;
   },
+  addUpdate: async (id, updateData) => {
+    const response = await api.post(
+      `/api/distress-messages/${id}/updates`,
+      updateData,
+    );
+    const { data } = response;
+    if (!data?.success || !data?.data) {
+      throw new Error(data?.message || "Invalid response format from server");
+    }
+    return data.data;
+  },
   getStatistics: async () => {
     const response = await api.get("/api/distress-messages/statistics");
     const { data } = response;
