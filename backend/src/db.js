@@ -13,26 +13,28 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 let pool;
-let dbType = "mysql"; // Try MySQL first
+let dbType = "mysql";
 
-// Try to connect to MySQL first, fallback to SQLite if it fails
+// Initialize MySQL database connection
 const initializeDatabase = async () => {
+  const poolConfig = {
+    host: process.env.DB_HOST || "localhost",
+    user: process.env.DB_USER || "root",
+    password: process.env.DB_PASSWORD || "",
+    database: process.env.DB_NAME || "management",
+    port: parseInt(process.env.DB_PORT || "3306", 10),
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0,
+    multipleStatements: true,
+  };
+
+  logger.info(
+    `Connecting to MySQL at ${poolConfig.host}:${poolConfig.port} as ${poolConfig.user}`,
+  );
+  pool = mysql.createPool(poolConfig);
+
   try {
-    const poolConfig = {
-      host: process.env.DB_HOST || "localhost",
-      user: process.env.DB_USER || "root",
-      password: process.env.DB_PASSWORD || "",
-      database: process.env.DB_NAME || "management",
-      port: parseInt(process.env.DB_PORT || "3306", 10),
-      waitForConnections: true,
-      connectionLimit: 10,
-      queueLimit: 0,
-      multipleStatements: true,
-    };
-
-    logger.info("Attempting to connect to MySQL database...");
-    pool = mysql.createPool(poolConfig);
-
     // Test the connection
     const connection = await pool.getConnection();
     await connection.query("SELECT 1");
@@ -41,36 +43,15 @@ const initializeDatabase = async () => {
     logger.info("MySQL database connection successful");
     dbType = "mysql";
   } catch (error) {
-    logger.warn(
-      "MySQL connection failed, falling back to SQLite:",
-      error.message,
-    );
-
-    // Fallback to SQLite
-    const dbPath = path.join(__dirname, "..", "database.sqlite");
-
-    pool = await open({
-      filename: dbPath,
-      driver: sqlite3.Database,
-    });
-
-    await pool.exec("PRAGMA foreign_keys = ON;");
-
-    // Check if database needs initialization
-    const tables = await pool.all(
-      "SELECT name FROM sqlite_master WHERE type='table' AND name='users'",
-    );
-    if (tables.length === 0) {
-      logger.info("Initializing SQLite database with schema...");
-      const schemaPath = path.join(__dirname, "database", "schema.sqlite.sql");
-      if (fs.existsSync(schemaPath)) {
-        const schema = fs.readFileSync(schemaPath, "utf8");
-        await pool.exec(schema);
-      }
+    logger.error("MySQL connection failed:", error.message);
+    if (error.code === "ECONNREFUSED") {
+      logger.error(
+        "Connection refused. Please ensure MySQL server is running.",
+      );
+    } else if (error.code === "ER_ACCESS_DENIED_ERROR") {
+      logger.error("Access denied. Please check your MySQL credentials.");
     }
-
-    logger.info("SQLite database connection successful");
-    dbType = "sqlite";
+    throw error;
   }
 };
 
