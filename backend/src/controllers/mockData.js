@@ -25,6 +25,7 @@ export const mockUsers = [
   {
     id: 3,
     username: "sarah_admin",
+    password: "$2b$10$NKxDv2xBS3.Pc0mMHlATQuMi.auxS0Gaoers5FqPFtqejiNRK/OYm", // admin123
     email: "sarah.admin@distressms.com",
     role: "admin",
     is_active: false,
@@ -46,6 +47,7 @@ export const mockUsers = [
   {
     id: 5,
     username: "michael_dir",
+    password: "$2b$10$66.a0QLBw5BjeEPAqFMcUuQBApkvJ5yKb3fNCKIdl/o.iT29A2Dna", // director123
     email: "michael.director@distressms.com",
     role: "director",
     is_active: true,
@@ -56,6 +58,7 @@ export const mockUsers = [
   {
     id: 6,
     username: "lisa_dir",
+    password: "$2b$10$66.a0QLBw5BjeEPAqFMcUuQBApkvJ5yKb3fNCKIdl/o.iT29A2Dna", // director123
     email: "lisa.director@distressms.com",
     role: "director",
     is_active: true,
@@ -110,6 +113,7 @@ export const mockUsers = [
   {
     id: 11,
     username: "peter_cadet",
+    password: "$2b$10$NXHZpOFqqeCfJh5DLN.RnuwckhJEwLybEk6sCYEisKacrncZC/kwW", // cadet123
     email: "peter.cadet@distressms.com",
     role: "cadet",
     is_active: true,
@@ -120,6 +124,7 @@ export const mockUsers = [
   {
     id: 12,
     username: "julia_cadet",
+    password: "$2b$10$NXHZpOFqqeCfJh5DLN.RnuwckhJEwLybEk6sCYEisKacrncZC/kwW", // cadet123
     email: "julia.cadet@distressms.com",
     role: "cadet",
     is_active: true,
