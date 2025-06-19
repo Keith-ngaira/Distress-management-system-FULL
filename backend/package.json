@@ -13,6 +13,7 @@
     "setup-mysql": "node src/scripts/setupMysqlDb.js",
     "init-db": "node src/scripts/initializeDb.js",
     "check-users": "node src/scripts/checkUsers.js",
+    "fix-passwords": "node src/scripts/fixPasswords.js",
     "cleanup": "node src/scripts/scheduleCleanup.js"
   },
   "keywords": [],
