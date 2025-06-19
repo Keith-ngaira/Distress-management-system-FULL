@@ -50,20 +50,13 @@ import {
   Schedule as PendingIcon,
   Support as SupportIcon,
   TrendingUp as TrendingUpIcon,
-  Notifications as NotificationsIcon,
   Speed as PerformanceIcon,
   Report as ReportIcon,
   Warning as EmergencyIcon,
-  Phone as PhoneIcon,
-  Email as EmailIcon,
-  LocationOn as LocationIcon,
   Person as PersonIcon,
   Flag as FlagIcon,
   Info as InfoIcon,
   Edit as EditIcon,
-  PlayArrow as StartIcon,
-  Pause as PauseIcon,
-  Stop as StopIcon,
 } from "@mui/icons-material";
 import { dashboard, distressMessages } from "../../services/api";
 import { useAuth } from "../../contexts/AuthContext";

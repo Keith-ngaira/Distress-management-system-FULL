@@ -49,7 +49,6 @@ import {
   Speed as PerformanceIcon,
   AssignmentInd as AssignIcon,
   PriorityHigh as PriorityIcon,
-  PlayArrow as StartIcon,
   Info as InfoIcon,
 } from "@mui/icons-material";
 import {
