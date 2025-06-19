@@ -153,6 +153,8 @@ export const mockDashboardData = {
       priority: "urgent",
       createdAt: "2024-01-15T17:20:00Z",
       assignedTo: "Unassigned",
+      folio_number: "DM011",
+      country_of_origin: "Greece",
     },
     {
       id: 2,
@@ -161,6 +163,8 @@ export const mockDashboardData = {
       priority: "urgent",
       createdAt: "2024-01-15T10:45:00Z",
       assignedTo: "alex_front",
+      folio_number: "DM010",
+      country_of_origin: "Spain",
     },
     {
       id: 3,
@@ -169,6 +173,8 @@ export const mockDashboardData = {
       priority: "high",
       createdAt: "2024-01-14T11:25:00Z",
       assignedTo: "peter_cadet",
+      folio_number: "DM007",
+      country_of_origin: "Somalia",
     },
     {
       id: 4,
@@ -177,6 +183,8 @@ export const mockDashboardData = {
       priority: "high",
       createdAt: "2024-01-13T16:40:00Z",
       assignedTo: "maria_front",
+      folio_number: "DM004",
+      country_of_origin: "Australia",
     },
     {
       id: 5,
@@ -185,6 +193,125 @@ export const mockDashboardData = {
       priority: "medium",
       createdAt: "2024-01-08T15:30:00Z",
       assignedTo: "julia_cadet",
+      folio_number: "DM008",
+      country_of_origin: "France",
+    },
+  ],
+};
+
+// Director-specific dashboard data
+export const mockDirectorData = {
+  ...mockDashboardData,
+  directorStats: {
+    totalTeamMembers: 12,
+    frontOfficeStaff: 5,
+    cadets: 7,
+    activeCases: 6,
+    pendingAssignments: 2,
+    overdueReports: 1,
+    teamPerformance: 87,
+  },
+  teamWorkload: [
+    {
+      member: "alex_front",
+      role: "front_office",
+      activeCases: 2,
+      avgResponseTime: 18,
+      performance: 94,
+    },
+    {
+      member: "maria_front",
+      role: "front_office",
+      activeCases: 1,
+      avgResponseTime: 22,
+      performance: 89,
+    },
+    {
+      member: "david_front",
+      role: "front_office",
+      activeCases: 3,
+      avgResponseTime: 15,
+      performance: 96,
+    },
+    {
+      member: "peter_cadet",
+      role: "cadet",
+      activeCases: 2,
+      avgResponseTime: 28,
+      performance: 85,
+    },
+    {
+      member: "julia_cadet",
+      role: "cadet",
+      activeCases: 1,
+      avgResponseTime: 32,
+      performance: 82,
+    },
+    {
+      member: "mark_cadet",
+      role: "cadet",
+      activeCases: 3,
+      avgResponseTime: 25,
+      performance: 88,
+    },
+  ],
+  caseAssignments: [
+    {
+      id: 1,
+      caseId: 2,
+      folio: "DM010",
+      subject: "Mass Casualty Event",
+      assignedTo: "alex_front",
+      assignedBy: "director",
+      priority: "urgent",
+      instructions:
+        "Priority medical response required - coordinate with local hospitals",
+      assignedDate: "2024-01-15T10:45:00Z",
+      status: "active",
+    },
+    {
+      id: 2,
+      caseId: 3,
+      folio: "DM007",
+      subject: "Humanitarian Crisis",
+      assignedTo: "peter_cadet",
+      assignedBy: "director",
+      priority: "high",
+      instructions:
+        "Expedite humanitarian aid delivery - work with NGO partners",
+      assignedDate: "2024-01-14T11:25:00Z",
+      status: "active",
+    },
+    {
+      id: 3,
+      caseId: 4,
+      folio: "DM004",
+      subject: "Aircraft Emergency",
+      assignedTo: "maria_front",
+      assignedBy: "director",
+      priority: "high",
+      instructions:
+        "Aviation emergency procedures in effect - coordinate with ATC",
+      assignedDate: "2024-01-13T16:40:00Z",
+      status: "active",
+    },
+  ],
+  urgentAlerts: [
+    {
+      id: 1,
+      type: "pending_case",
+      title: "Unassigned Urgent Case",
+      message: "Medical Emergency at Sea (DM011) requires immediate assignment",
+      priority: "urgent",
+      createdAt: "2024-01-15T17:20:00Z",
+    },
+    {
+      id: 2,
+      type: "overdue_report",
+      title: "Overdue Case Update",
+      message: "Missing Person case (DM003) - No updates in 24 hours",
+      priority: "high",
+      createdAt: "2024-01-15T08:00:00Z",
     },
   ],
 };
