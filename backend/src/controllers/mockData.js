@@ -752,7 +752,6 @@ export const mockCadetData = {
 };
 
 let userIdCounter = mockUsers.length + 1;
-let userIdCounter = mockUsers.length + 1;
 
 export const findUserById = (id) => {
   return mockUsers.find((user) => user.id === parseInt(id));
