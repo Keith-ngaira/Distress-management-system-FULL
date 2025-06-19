@@ -14,9 +14,6 @@ const poolConfig = {
   connectionLimit: 10,
   queueLimit: 0,
   multipleStatements: true,
-  acquireTimeout: 60000,
-  timeout: 60000,
-  reconnect: true,
 };
 
 logger.info("Creating MySQL database connection pool");
