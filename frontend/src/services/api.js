@@ -428,6 +428,10 @@ Object.keys(dashboard).forEach((key) => {
   dashboard[key] = withErrorBoundary(dashboard[key]);
 });
 
+Object.keys(caseAssignments).forEach((key) => {
+  caseAssignments[key] = withErrorBoundary(caseAssignments[key]);
+});
+
 if (register && typeof register === "object") {
   Object.keys(register).forEach((key) => {
     if (typeof register[key] === "function") {
