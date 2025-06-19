@@ -328,6 +328,136 @@ export const mockDirectorData = {
   ],
 };
 
+// Front Office specific dashboard data
+export const mockFrontOfficeData = {
+  ...mockDashboardData,
+  frontOfficeStats: {
+    casesCreated: 8,
+    casesAssigned: 5,
+    pendingReports: 2,
+    avgResponseTime: 18,
+    caseResolutionRate: 92,
+    urgentCases: 3,
+  },
+  myCases: [
+    {
+      id: 2,
+      folio_number: "DM010",
+      subject: "Mass Casualty Event",
+      status: "assigned",
+      priority: "urgent",
+      country_of_origin: "Spain",
+      distressed_person_name: "Multiple Patients",
+      created_at: "2024-01-15T10:45:00Z",
+      assigned_date: "2024-01-15T10:50:00Z",
+      director_instructions:
+        "Priority medical response required - coordinate with local hospitals",
+      last_update: "2024-01-15T12:30:00Z",
+    },
+    {
+      id: 4,
+      folio_number: "DM004",
+      subject: "Aircraft Emergency",
+      status: "in_progress",
+      priority: "high",
+      country_of_origin: "Australia",
+      distressed_person_name: "Sarah Davis",
+      created_at: "2024-01-13T16:40:00Z",
+      assigned_date: "2024-01-13T17:00:00Z",
+      director_instructions:
+        "Aviation emergency procedures in effect - coordinate with ATC",
+      last_update: "2024-01-14T09:15:00Z",
+    },
+    {
+      id: 8,
+      folio_number: "DM008",
+      subject: "Security Incident",
+      status: "resolved",
+      priority: "medium",
+      country_of_origin: "France",
+      distressed_person_name: "Airport Staff",
+      created_at: "2024-01-08T15:30:00Z",
+      assigned_date: "2024-01-08T15:45:00Z",
+      director_instructions: "Security protocols must be followed",
+      last_update: "2024-01-08T17:20:00Z",
+      resolved_at: "2024-01-08T17:20:00Z",
+    },
+  ],
+  recentUpdates: [
+    {
+      id: 1,
+      case_id: 2,
+      folio_number: "DM010",
+      update_text:
+        "Coordinated with Hospital General - 15 ambulances dispatched to scene",
+      updated_at: "2024-01-15T12:30:00Z",
+      updated_by: "alex_front",
+    },
+    {
+      id: 2,
+      case_id: 4,
+      folio_number: "DM004",
+      update_text: "Emergency landing successful - rescue teams on site",
+      updated_at: "2024-01-14T09:15:00Z",
+      updated_by: "maria_front",
+    },
+    {
+      id: 3,
+      case_id: 8,
+      folio_number: "DM008",
+      update_text: "All clear - suspicious package confirmed safe",
+      updated_at: "2024-01-08T17:20:00Z",
+      updated_by: "david_front",
+    },
+  ],
+  quickActions: [
+    {
+      id: 1,
+      title: "Create New Case",
+      description: "Report a new distress situation",
+      icon: "add_circle",
+      action: "create_case",
+      urgent: false,
+    },
+    {
+      id: 2,
+      title: "Update Urgent Cases",
+      description: "3 urgent cases need status updates",
+      icon: "warning",
+      action: "update_urgent",
+      urgent: true,
+    },
+    {
+      id: 3,
+      title: "Pending Reports",
+      description: "2 cases require detailed reports",
+      icon: "assignment",
+      action: "pending_reports",
+      urgent: false,
+    },
+  ],
+  casesByStatus: {
+    pending: 0,
+    assigned: 2,
+    in_progress: 1,
+    resolved: 2,
+  },
+  performanceMetrics: {
+    thisWeek: {
+      casesHandled: 5,
+      avgResponseTime: "18 min",
+      resolutionRate: "92%",
+      satisfaction: "4.7/5",
+    },
+    thisMonth: {
+      casesHandled: 23,
+      avgResponseTime: "22 min",
+      resolutionRate: "89%",
+      satisfaction: "4.6/5",
+    },
+  },
+};
+
 let userIdCounter = mockUsers.length + 1;
 
 export const findUserById = (id) => {
