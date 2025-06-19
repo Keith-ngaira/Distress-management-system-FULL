@@ -8,7 +8,6 @@ import {
   Alert,
   Card,
   CardContent,
-  CardActions,
   Button,
   Chip,
   List,
@@ -27,7 +26,6 @@ import {
   IconButton,
   Tooltip,
   useTheme,
-  Badge,
   Stack,
 } from "@mui/material";
 import {
@@ -46,17 +44,12 @@ import {
   Settings as SettingsIcon,
   Visibility as ViewIcon,
   Edit as EditIcon,
-  Delete as DeleteIcon,
   Add as AddIcon,
   Refresh as RefreshIcon,
   Download as DownloadIcon,
   FilterList as FilterIcon,
 } from "@mui/icons-material";
-import {
-  dashboard,
-  distressMessages,
-  users as usersApi,
-} from "../../services/api";
+import { dashboard, distressMessages } from "../../services/api";
 import { useAuth } from "../../contexts/AuthContext";
 
 const AdminDashboard = () => {

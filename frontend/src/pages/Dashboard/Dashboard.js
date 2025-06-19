@@ -27,11 +27,6 @@ const Dashboard = () => {
   const { user } = useAuth();
   const theme = useTheme();
 
-  // If user is admin, show the admin dashboard
-  if (user?.role === "admin") {
-    return <AdminDashboard />;
-  }
-
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -46,6 +41,11 @@ const Dashboard = () => {
 
     fetchData();
   }, []);
+
+  // If user is admin, show the admin dashboard
+  if (user?.role === "admin") {
+    return <AdminDashboard />;
+  }
 
   if (loading) {
     return (
