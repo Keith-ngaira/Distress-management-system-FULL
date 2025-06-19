@@ -29,7 +29,7 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token");
-    if (token) {
+    if (token && token !== "temp-admin-token-for-development") {
       config.headers.Authorization = `Bearer ${token}`;
     }
     if (process.env.NODE_ENV === "development") {
@@ -38,6 +38,8 @@ api.interceptors.request.use(
         url: config.url,
         baseURL: config.baseURL,
         fullURL: `${config.baseURL}${config.url}`,
+        hasAuth: !!token,
+        isTemporaryAuth: token === "temp-admin-token-for-development",
       });
     }
     return config;
@@ -74,8 +76,13 @@ api.interceptors.response.use(
 
     const originalRequest = error.config;
 
-    // Handle token expiration
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // Handle token expiration (but not for temporary development auth)
+    const currentToken = localStorage.getItem("token");
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      currentToken !== "temp-admin-token-for-development"
+    ) {
       originalRequest._retry = true;
 
       // Clear invalid token
