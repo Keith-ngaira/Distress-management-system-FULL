@@ -117,8 +117,10 @@ const FrontOfficeDashboard = () => {
 
   const handleSubmitUpdate = async () => {
     try {
-      // In a real application, this would make an API call to update the case
-      console.log("Updating case:", selectedCase.id, "with:", updateText);
+      await distressMessages.addUpdate(selectedCase.id, {
+        update_text: updateText,
+      });
+
       setUpdateDialogOpen(false);
       setUpdateText("");
       setSelectedCase(null);
@@ -137,8 +139,8 @@ const FrontOfficeDashboard = () => {
 
   const handleSubmitNewCase = async () => {
     try {
-      // In a real application, this would make an API call to create the case
-      console.log("Creating new case:", newCaseData);
+      await distressMessages.create(newCaseData);
+
       setCreateDialogOpen(false);
       setNewCaseData({
         sender_name: "",
