@@ -1,3 +1,10 @@
+-- Execute this in your local MySQL to set up the Distress Management System
+-- Run this with your credentials: mysql -u root -p management < SETUP_YOUR_MYSQL.sql
+
+-- Create database if it doesn't exist
+CREATE DATABASE IF NOT EXISTS management;
+USE management;
+
 -- Create tables if they don't exist
 CREATE TABLE IF NOT EXISTS users (
     id INT PRIMARY KEY AUTO_INCREMENT,
@@ -151,12 +158,13 @@ CREATE TABLE IF NOT EXISTS cleanup_events (
     INDEX idx_event_type (event_type)
 );
 
--- Insert initial users with email addresses (passwords match README: admin123, director123, etc.)
+-- Insert test users (passwords are: admin123, director123, frontoffice123, cadet123)
 INSERT IGNORE INTO users (username, password, email, role, created_at) VALUES
-('admin', '$2b$10$NKxDv2xBS3.Pc0mMHlATQuMi.auxS0Gaoers5FqPFtqejiNRK/OYm', 'admin@example.com', 'admin', '2025-02-23 17:07:25'),
-('director', '$2b$10$66.a0QLBw5BjeEPAqFMcUuQBApkvJ5yKb3fNCKIdl/o.iT29A2Dna', 'director@example.com', 'director', '2025-02-23 17:07:25'),
-('frontoffice', '$2b$10$pk/89H4ej95La1swZcjvLeRD6NKg8TP7xo/YiGuVR3hGA2YYBrM1.', 'frontoffice@example.com', 'front_office', '2025-02-23 17:07:25'),
-('cadet', '$2b$10$NXHZpOFqqeCfJh5DLN.RnuwckhJEwLybEk6sCYEisKacrncZC/kwW', 'cadet@example.com', 'cadet', '2025-02-23 17:07:25'),
-('Keith', '$2b$10$Q0jfYPdUT7u9b1S7spV/0urJJl38.qEfwlNJ5ULtWs.b.dTzm1vgW', 'keith@example.com', 'director', '2025-02-24 08:26:13'),
-('John', '$2b$10$r1OGhlqH7pxOGQFT5/sywOECATiNpwHXOR9tTQ7STLQCsVImTWxZS', 'john@example.com', 'cadet', '2025-02-24 08:27:43'),
-('Doe', '$2b$10$H4ePA4ad5fw0TRv/bZQAX.X7nBjXMTYk4Tj.9H2vK0gl2uvMvO7E.', 'doe@example.com', 'cadet', '2025-02-24 08:28:32');
+('admin', '$2b$10$NKxDv2xBS3.Pc0mMHlATQuMi.auxS0Gaoers5FqPFtqejiNRK/OYm', 'admin@example.com', 'admin', NOW()),
+('director', '$2b$10$66.a0QLBw5BjeEPAqFMcUuQBApkvJ5yKb3fNCKIdl/o.iT29A2Dna', 'director@example.com', 'director', NOW()),
+('frontoffice', '$2b$10$pk/89H4ej95La1swZcjvLeRD6NKg8TP7xo/YiGuVR3hGA2YYBrM1.', 'frontoffice@example.com', 'front_office', NOW()),
+('cadet', '$2b$10$NXHZpOFqqeCfJh5DLN.RnuwckhJEwLybEk6sCYEisKacrncZC/kwW', 'cadet@example.com', 'cadet', NOW());
+
+-- Confirm setup
+SELECT 'Database setup completed!' as status;
+SELECT username, role, email FROM users;
