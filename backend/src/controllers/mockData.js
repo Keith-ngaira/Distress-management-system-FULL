@@ -3,6 +3,7 @@ export const mockUsers = [
   {
     id: 1,
     username: "admin",
+    password: "$2b$10$NKxDv2xBS3.Pc0mMHlATQuMi.auxS0Gaoers5FqPFtqejiNRK/OYm", // admin123
     email: "admin@distressms.com",
     role: "admin",
     is_active: true,
@@ -13,6 +14,7 @@ export const mockUsers = [
   {
     id: 2,
     username: "john_admin",
+    password: "$2b$10$NKxDv2xBS3.Pc0mMHlATQuMi.auxS0Gaoers5FqPFtqejiNRK/OYm", // admin123
     email: "john.admin@distressms.com",
     role: "admin",
     is_active: true,
@@ -33,6 +35,7 @@ export const mockUsers = [
   {
     id: 4,
     username: "director",
+    password: "$2b$10$66.a0QLBw5BjeEPAqFMcUuQBApkvJ5yKb3fNCKIdl/o.iT29A2Dna", // director123
     email: "director@distressms.com",
     role: "director",
     is_active: true,
@@ -63,6 +66,7 @@ export const mockUsers = [
   {
     id: 7,
     username: "frontoffice",
+    password: "$2b$10$pk/89H4ej95La1swZcjvLeRD6NKg8TP7xo/YiGuVR3hGA2YYBrM1.", // frontoffice123
     email: "frontoffice@distressms.com",
     role: "front_office",
     is_active: true,
@@ -73,6 +77,7 @@ export const mockUsers = [
   {
     id: 8,
     username: "alex_front",
+    password: "$2b$10$pk/89H4ej95La1swZcjvLeRD6NKg8TP7xo/YiGuVR3hGA2YYBrM1.", // frontoffice123
     email: "alex.front@distressms.com",
     role: "front_office",
     is_active: true,
@@ -83,6 +88,7 @@ export const mockUsers = [
   {
     id: 9,
     username: "maria_front",
+    password: "$2b$10$pk/89H4ej95La1swZcjvLeRD6NKg8TP7xo/YiGuVR3hGA2YYBrM1.", // frontoffice123
     email: "maria.front@distressms.com",
     role: "front_office",
     is_active: true,
@@ -93,6 +99,7 @@ export const mockUsers = [
   {
     id: 10,
     username: "cadet",
+    password: "$2b$10$NXHZpOFqqeCfJh5DLN.RnuwckhJEwLybEk6sCYEisKacrncZC/kwW", // cadet123
     email: "cadet@distressms.com",
     role: "cadet",
     is_active: true,
