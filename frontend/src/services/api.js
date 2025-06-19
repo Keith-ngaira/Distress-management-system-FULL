@@ -337,8 +337,12 @@ Object.keys(dashboard).forEach((key) => {
   dashboard[key] = withErrorBoundary(dashboard[key]);
 });
 
-Object.keys(register).forEach((key) => {
-  register[key] = withErrorBoundary(register[key]);
-});
+if (register && typeof register === "object") {
+  Object.keys(register).forEach((key) => {
+    if (typeof register[key] === "function") {
+      register[key] = withErrorBoundary(register[key]);
+    }
+  });
+}
 
 export default api;
