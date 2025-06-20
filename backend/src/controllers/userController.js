@@ -1,6 +1,6 @@
 import { executeQuery, executeTransaction, isConnected } from "../db.js";
 import { logger } from "../middleware/logger.js";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import {
   mockUsers,
   findUserById,
@@ -25,7 +25,7 @@ export const getAllUsers = async (req, res) => {
     }
 
     const users = await executeQuery(`
-            SELECT 
+            SELECT
                 id,
                 username,
                 email,
@@ -34,7 +34,7 @@ export const getAllUsers = async (req, res) => {
                 last_login,
                 created_at,
                 updated_at
-            FROM users 
+            FROM users
             ORDER BY created_at DESC
         `);
 
@@ -80,7 +80,7 @@ export const getUserById = async (req, res) => {
 
     const users = await executeQuery(
       `
-            SELECT 
+            SELECT
                 id,
                 username,
                 email,
@@ -89,7 +89,7 @@ export const getUserById = async (req, res) => {
                 last_login,
                 created_at,
                 updated_at
-            FROM users 
+            FROM users
             WHERE id = ?
         `,
       [id],
@@ -154,7 +154,7 @@ export const getCurrentUser = async (req, res) => {
 
     const users = await executeQuery(
       `
-            SELECT 
+            SELECT
                 id,
                 username,
                 email,
@@ -163,7 +163,7 @@ export const getCurrentUser = async (req, res) => {
                 last_login,
                 created_at,
                 updated_at
-            FROM users 
+            FROM users
             WHERE id = ?
         `,
       [userId],
@@ -259,7 +259,7 @@ export const createUser = async (req, res) => {
     // Check if user already exists
     const existingUsers = await executeQuery(
       `
-            SELECT id FROM users 
+            SELECT id FROM users
             WHERE username = ? OR email = ?
         `,
       [username, email],
@@ -278,7 +278,7 @@ export const createUser = async (req, res) => {
     // Create user in database
     const result = await executeQuery(
       `
-            INSERT INTO users (username, email, password, role, is_active) 
+            INSERT INTO users (username, email, password, role, is_active)
             VALUES (?, ?, ?, ?, 1)
         `,
       [username, email, hashedPassword, role],
@@ -287,7 +287,7 @@ export const createUser = async (req, res) => {
     // Get the created user
     const newUsers = await executeQuery(
       `
-            SELECT 
+            SELECT
                 id,
                 username,
                 email,
@@ -296,7 +296,7 @@ export const createUser = async (req, res) => {
                 last_login,
                 created_at,
                 updated_at
-            FROM users 
+            FROM users
             WHERE id = ?
         `,
       [result.insertId],
@@ -419,8 +419,8 @@ export const updateUser = async (req, res) => {
     // Update user
     await executeQuery(
       `
-            UPDATE users 
-            SET ${updateFields.join(", ")} 
+            UPDATE users
+            SET ${updateFields.join(", ")}
             WHERE id = ?
         `,
       updateValues,
@@ -429,7 +429,7 @@ export const updateUser = async (req, res) => {
     // Get updated user
     const updatedUsers = await executeQuery(
       `
-            SELECT 
+            SELECT
                 id,
                 username,
                 email,
@@ -438,7 +438,7 @@ export const updateUser = async (req, res) => {
                 last_login,
                 created_at,
                 updated_at
-            FROM users 
+            FROM users
             WHERE id = ?
         `,
       [id],
@@ -581,7 +581,7 @@ export const getUsersByRole = async (req, res) => {
 
     const users = await executeQuery(
       `
-            SELECT 
+            SELECT
                 id,
                 username,
                 email,
@@ -590,7 +590,7 @@ export const getUsersByRole = async (req, res) => {
                 last_login,
                 created_at,
                 updated_at
-            FROM users 
+            FROM users
             WHERE role = ?
             ORDER BY created_at DESC
         `,
@@ -628,8 +628,8 @@ export const updateLastLogin = async (userId) => {
 
     await executeQuery(
       `
-            UPDATE users 
-            SET last_login = NOW() 
+            UPDATE users
+            SET last_login = NOW()
             WHERE id = ?
         `,
       [userId],
@@ -679,14 +679,14 @@ export const getUserStatistics = async (req, res) => {
         `);
 
     const usersByRole = await executeQuery(`
-            SELECT role, COUNT(*) as count 
-            FROM users 
+            SELECT role, COUNT(*) as count
+            FROM users
             GROUP BY role
         `);
 
     const recentRegistrations = await executeQuery(`
-            SELECT COUNT(*) as recent 
-            FROM users 
+            SELECT COUNT(*) as recent
+            FROM users
             WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
         `);
 
