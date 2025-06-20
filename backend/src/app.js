@@ -12,6 +12,7 @@ import dashboardRoutes from "./routes/dashboardRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
 import caseAssignmentRoutes from "./routes/caseAssignmentRoutes.js";
+import builderRoutes from "./routes/builderRoutes.js";
 import { requestLogger, errorLogger, logger } from "./middleware/logger.js";
 import { authenticateToken } from "./middleware/auth.js";
 import path from "path";
