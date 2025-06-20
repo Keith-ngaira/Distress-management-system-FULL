@@ -50,6 +50,26 @@ const CONNECTION_TEST_INTERVAL = 30000; // 30 seconds
 
 // Execute a query with comprehensive error handling and retry logic
 const executeQuery = async (sql, params = [], retryCount = 0) => {
+  // Handle development mode without database
+  if (isDevModeNoDB) {
+    logger.info(
+      `Mock query executed: ${sql.substring(0, 100)}${sql.length > 100 ? "..." : ""}`,
+    );
+
+    // Return mock data based on query type
+    if (sql.toLowerCase().includes("select")) {
+      return []; // Return empty result set
+    } else if (sql.toLowerCase().includes("insert")) {
+      return { insertId: Math.floor(Math.random() * 1000), affectedRows: 1 };
+    } else if (
+      sql.toLowerCase().includes("update") ||
+      sql.toLowerCase().includes("delete")
+    ) {
+      return { affectedRows: 1, changedRows: 1 };
+    }
+    return { affectedRows: 1 };
+  }
+
   const maxRetries = 3;
   let connection;
 
