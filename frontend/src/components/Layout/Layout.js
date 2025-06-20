@@ -13,8 +13,6 @@ import {
   ListItemText,
   Toolbar,
   Typography,
-  useMediaQuery,
-  useTheme as useMuiTheme,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import DashboardIcon from "@mui/icons-material/Dashboard";
@@ -32,7 +30,6 @@ const drawerWidth = 240;
 
 const Layout = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const muiTheme = useMuiTheme();
 
   const navigate = useNavigate();
   const { user, logout } = useAuth();
