@@ -1,55 +1,49 @@
-import { Router } from 'express';
-import distressController from '../controllers/distressMessageController.js';
-import { authenticateToken } from '../middleware/auth.js';
-import { distressMessageSchemas, commonSchemas } from '../utils/validationSchemas.js';
-import { validateRequest } from '../middleware/validation.js';
+import { Router } from "express";
+import {
+  getAllDistressMessages,
+  getDistressMessageById,
+  createDistressMessage,
+  updateDistressMessage,
+  addCaseUpdate,
+  assignDistressMessage,
+  getDistressMessageStatistics,
+  deleteDistressMessage,
+} from "../controllers/distressMessageController.js";
+import { authenticateToken } from "../middleware/auth.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
 
 const router = Router();
 
 // Get messages with pagination and filtering
-router.get(
-    '/',
-    validateRequest({ query: commonSchemas.pagination.merge(commonSchemas.sorting) }),
-    authenticateToken,
-    distressController.getMessages.bind(distressController)
-);
+router.get("/", authenticateToken, asyncHandler(getAllDistressMessages));
 
 // Get dashboard statistics
 router.get(
-    '/statistics',
-    authenticateToken,
-    distressController.getStatistics.bind(distressController)
+  "/statistics",
+  authenticateToken,
+  asyncHandler(getDistressMessageStatistics),
 );
 
 // Create a new message
-router.post(
-    '/',
-    validateRequest({ body: distressMessageSchemas.create }),
-    authenticateToken,
-    distressController.createMessage.bind(distressController)
-);
+router.post("/", authenticateToken, asyncHandler(createDistressMessage));
 
 // Get a specific message
-router.get(
-    '/:id',
-    authenticateToken,
-    distressController.getMessage.bind(distressController)
-);
+router.get("/:id", authenticateToken, asyncHandler(getDistressMessageById));
 
 // Update a message
-router.put(
-    '/:id',
-    validateRequest({ body: distressMessageSchemas.update }),
-    authenticateToken,
-    distressController.updateMessage.bind(distressController)
-);
+router.put("/:id", authenticateToken, asyncHandler(updateDistressMessage));
+
+// Add case update
+router.post("/:id/updates", authenticateToken, asyncHandler(addCaseUpdate));
 
 // Assign a message
 router.post(
-    '/:id/assign',
-    validateRequest({ body: commonSchemas.assign }),
-    authenticateToken,
-    distressController.assignMessage.bind(distressController)
+  "/:id/assign",
+  authenticateToken,
+  asyncHandler(assignDistressMessage),
 );
+
+// Delete a message (admin only)
+router.delete("/:id", authenticateToken, asyncHandler(deleteDistressMessage));
 
 export default router;

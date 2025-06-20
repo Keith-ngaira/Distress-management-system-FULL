@@ -1,8 +1,11 @@
 import express from "express";
 import {
-  login,
-  register,
+  loginUser,
   changePassword,
+  refreshToken,
+  logoutUser,
+  verifyToken,
+  getUserProfile,
 } from "../controllers/authController.js";
 import { authenticateToken, authorize } from "../middleware/auth.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
@@ -10,27 +13,16 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 const router = express.Router();
 
 // Auth routes
-router.post("/login", asyncHandler(login));
-router.post("/register", asyncHandler(register)); // Allow first user registration, others require admin auth
+router.post("/login", asyncHandler(loginUser));
+router.post("/refresh", asyncHandler(refreshToken));
 router.post(
   "/change-password",
   authenticateToken,
   asyncHandler(changePassword),
 );
-router.post(
-  "/logout",
-  authenticateToken,
-  asyncHandler(async (req, res) => {
-    // Revoke the current token
-    if (req.token) {
-      req.app.locals.revokeToken(req.token);
-    }
-    res.json({
-      success: true,
-      message: "Successfully logged out",
-    });
-  }),
-);
+router.post("/logout", authenticateToken, asyncHandler(logoutUser));
+router.get("/verify", authenticateToken, asyncHandler(verifyToken));
+router.get("/profile", authenticateToken, asyncHandler(getUserProfile));
 
 // Test database connection (development only)
 if (process.env.NODE_ENV === "development") {
@@ -44,13 +36,11 @@ if (process.env.NODE_ENV === "development") {
       });
     } catch (error) {
       console.error("Database connection error:", error);
-      res
-        .status(500)
-        .json({
-          success: false,
-          message: "Database connection failed",
-          error: error.message,
-        });
+      res.status(500).json({
+        success: false,
+        message: "Database connection failed",
+        error: error.message,
+      });
     }
   });
 }

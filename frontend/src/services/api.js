@@ -23,21 +23,29 @@ const api = axios.create({
     "Content-Type": "application/json",
   },
   withCredentials: true,
+  timeout: 30000, // 30 second timeout
 });
 
-// Request interceptor for adding auth token
+// Database connectivity state
+let databaseConnected = false;
+let lastConnectivityCheck = 0;
+const CONNECTIVITY_CHECK_INTERVAL = 60000; // 1 minute
+
+// Request interceptor for adding auth token and checking database connectivity
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
     if (process.env.NODE_ENV === "development") {
       console.log("API Request:", {
         method: config.method?.toUpperCase(),
         url: config.url,
         baseURL: config.baseURL,
         fullURL: `${config.baseURL}${config.url}`,
+        databaseConnected,
       });
     }
     return config;
@@ -48,14 +56,28 @@ api.interceptors.request.use(
   },
 );
 
-// Response interceptor for handling errors
+// Response interceptor for handling errors and connectivity status
 api.interceptors.response.use(
   (response) => {
+    // Check if response indicates fallback mode
+    if (response.data && response.data.fallback) {
+      databaseConnected = false;
+      if (process.env.NODE_ENV === "development") {
+        console.warn(
+          "API Response using fallback data - database not connected",
+        );
+      }
+    } else {
+      databaseConnected = true;
+    }
+
     if (process.env.NODE_ENV === "development") {
       console.log("API Response:", {
         status: response.status,
         url: response.config.url,
         data: response.data,
+        fallback: response.data?.fallback || false,
+        databaseConnected,
       });
     }
     return response;
@@ -74,6 +96,13 @@ api.interceptors.response.use(
 
     const originalRequest = error.config;
 
+    // Handle specific error cases
+    if (error.response?.status === 503) {
+      // Service unavailable - likely database connection issue
+      databaseConnected = false;
+      console.warn("Database service unavailable");
+    }
+
     // Handle token expiration
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
@@ -90,6 +119,28 @@ api.interceptors.response.use(
   },
 );
 
+// Database connectivity helper functions
+export const getDatabaseConnectivityStatus = () => databaseConnected;
+
+export const checkDatabaseConnectivity = async () => {
+  const now = Date.now();
+  if (now - lastConnectivityCheck < CONNECTIVITY_CHECK_INTERVAL) {
+    return databaseConnected;
+  }
+
+  try {
+    const response = await api.get("/health");
+    databaseConnected = response.data?.database?.connected || false;
+    lastConnectivityCheck = now;
+    return databaseConnected;
+  } catch (error) {
+    console.error("Database connectivity check failed:", error);
+    databaseConnected = false;
+    lastConnectivityCheck = now;
+    return false;
+  }
+};
+
 // Auth endpoints
 export const auth = {
   login: async (username, password) => {
@@ -105,10 +156,19 @@ export const auth = {
 
     return data;
   },
-  logout: () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+
+  logout: async () => {
+    try {
+      await api.post("/api/auth/logout");
+    } catch (error) {
+      console.warn("Logout request failed:", error.message);
+    } finally {
+      // Clear local storage regardless of API call success
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+    }
   },
+
   changePassword: async (data) => {
     const response = await api.post("/api/auth/change-password", data);
     const { data: responseData } = response;
@@ -118,6 +178,36 @@ export const auth = {
       );
     }
     return responseData;
+  },
+
+  refreshToken: async () => {
+    const response = await api.post("/api/auth/refresh");
+    const { data } = response;
+    if (!data?.success || !data?.data?.token) {
+      throw new Error(data?.message || "Token refresh failed");
+    }
+
+    // Update stored token
+    localStorage.setItem("token", data.data.token);
+    return data;
+  },
+
+  verifyToken: async () => {
+    const response = await api.get("/api/auth/verify");
+    const { data } = response;
+    if (!data?.success) {
+      throw new Error(data?.message || "Token verification failed");
+    }
+    return data;
+  },
+
+  getProfile: async () => {
+    const response = await api.get("/api/auth/profile");
+    const { data } = response;
+    if (!data?.success || !data?.data) {
+      throw new Error(data?.message || "Invalid response format from server");
+    }
+    return data.data;
   },
 };
 
@@ -131,6 +221,7 @@ export const users = {
     }
     return data.data;
   },
+
   getAll: async () => {
     const response = await api.get("/api/users");
     const { data } = response;
@@ -139,6 +230,34 @@ export const users = {
     }
     return data.data;
   },
+
+  getById: async (id) => {
+    const response = await api.get(`/api/users/${id}`);
+    const { data } = response;
+    if (!data?.success || !data?.data) {
+      throw new Error(data?.message || "Invalid response format from server");
+    }
+    return data.data;
+  },
+
+  getByRole: async (role) => {
+    const response = await api.get(`/api/users/role/${role}`);
+    const { data } = response;
+    if (!data?.success || !data?.data) {
+      throw new Error(data?.message || "Invalid response format from server");
+    }
+    return data.data;
+  },
+
+  getStatistics: async () => {
+    const response = await api.get("/api/users/statistics");
+    const { data } = response;
+    if (!data?.success || !data?.data) {
+      throw new Error(data?.message || "Invalid response format from server");
+    }
+    return data.data;
+  },
+
   create: async (userData) => {
     const response = await api.post("/api/users", userData);
     const { data } = response;
@@ -147,6 +266,7 @@ export const users = {
     }
     return data.data;
   },
+
   update: async (userId, userData) => {
     const response = await api.put(`/api/users/${userId}`, userData);
     const { data } = response;
@@ -155,6 +275,7 @@ export const users = {
     }
     return data.data;
   },
+
   delete: async (userId) => {
     const response = await api.delete(`/api/users/${userId}`);
     const { data } = response;
@@ -163,11 +284,6 @@ export const users = {
     }
     return data;
   },
-};
-
-// User registration (legacy - use users.create instead)
-export const register = async (username, password, email, role) => {
-  return users.create({ username, password, email, role });
 };
 
 // Distress messages endpoints
@@ -182,6 +298,7 @@ export const distressMessages = {
     }
     return data.data;
   },
+
   getById: async (id) => {
     const response = await api.get(`/api/distress-messages/${id}`);
     const { data } = response;
@@ -190,6 +307,16 @@ export const distressMessages = {
     }
     return data.data;
   },
+
+  getStatistics: async () => {
+    const response = await api.get("/api/distress-messages/statistics");
+    const { data } = response;
+    if (!data?.success || !data?.data) {
+      throw new Error(data?.message || "Invalid response format from server");
+    }
+    return data.data;
+  },
+
   create: async (messageData) => {
     const response = await api.post("/api/distress-messages", messageData);
     const { data } = response;
@@ -198,6 +325,7 @@ export const distressMessages = {
     }
     return data.data;
   },
+
   update: async (id, messageData) => {
     const response = await api.put(`/api/distress-messages/${id}`, messageData);
     const { data } = response;
@@ -206,6 +334,16 @@ export const distressMessages = {
     }
     return data.data;
   },
+
+  delete: async (id) => {
+    const response = await api.delete(`/api/distress-messages/${id}`);
+    const { data } = response;
+    if (!data?.success) {
+      throw new Error(data?.message || "Invalid response format from server");
+    }
+    return data;
+  },
+
   addUpdate: async (id, updateData) => {
     const response = await api.post(
       `/api/distress-messages/${id}/updates`,
@@ -217,17 +355,11 @@ export const distressMessages = {
     }
     return data.data;
   },
-  getStatistics: async () => {
-    const response = await api.get("/api/distress-messages/statistics");
-    const { data } = response;
-    if (!data?.success || !data?.data) {
-      throw new Error(data?.message || "Invalid response format from server");
-    }
-    return data.data;
-  },
-  assign: async (id, assigneeId) => {
+
+  assign: async (id, assigneeId, instructions) => {
     const response = await api.post(`/api/distress-messages/${id}/assign`, {
-      assigneeId,
+      assignee_id: assigneeId,
+      instructions,
     });
     const { data } = response;
     if (!data?.success || !data?.data) {
@@ -250,6 +382,7 @@ export const caseUpdates = {
     }
     return data.data;
   },
+
   getByMessageId: async (messageId) => {
     const response = await api.get(
       `/api/distress-messages/${messageId}/updates`,
@@ -272,14 +405,16 @@ export const notifications = {
     }
     return data.data;
   },
+
   getUnreadCount: async () => {
     const response = await api.get("/api/notifications/unread-count");
     const { data } = response;
-    if (!data?.success || !data?.data?.count === undefined) {
+    if (!data?.success || data?.data?.count === undefined) {
       throw new Error(data?.message || "Invalid response format from server");
     }
     return data.data;
   },
+
   markAsRead: async (id) => {
     const response = await api.put(`/api/notifications/${id}/read`);
     const { data } = response;
@@ -288,6 +423,7 @@ export const notifications = {
     }
     return data;
   },
+
   markAllAsRead: async () => {
     const response = await api.put("/api/notifications/mark-all-read");
     const { data } = response;
@@ -296,6 +432,7 @@ export const notifications = {
     }
     return data;
   },
+
   delete: async (id) => {
     const response = await api.delete(`/api/notifications/${id}`);
     const { data } = response;
@@ -308,24 +445,39 @@ export const notifications = {
 
 // Attachments endpoints
 export const attachments = {
-  upload: async (distressMessageId, file) => {
+  upload: async (distressMessageId, file, onProgress) => {
     const formData = new FormData();
     formData.append("file", file);
+
+    const config = {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+      timeout: 300000, // 5 minute timeout for file uploads
+    };
+
+    if (onProgress) {
+      config.onUploadProgress = (progressEvent) => {
+        const percentCompleted = Math.round(
+          (progressEvent.loaded * 100) / progressEvent.total,
+        );
+        onProgress(percentCompleted);
+      };
+    }
+
     const response = await api.post(
       `/api/attachments/${distressMessageId}/upload`,
       formData,
-      {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      },
+      config,
     );
+
     const { data } = response;
     if (!data?.success || !data?.data) {
       throw new Error(data?.message || "Invalid response format from server");
     }
     return data.data;
   },
+
   getByMessageId: async (distressMessageId) => {
     const response = await api.get(`/api/attachments/${distressMessageId}`);
     const { data } = response;
@@ -334,11 +486,22 @@ export const attachments = {
     }
     return data.data;
   },
+
   download: async (id) => {
     const response = await api.get(`/api/attachments/download/${id}`, {
       responseType: "blob",
+      timeout: 120000, // 2 minute timeout for downloads
     });
     return response.data;
+  },
+
+  delete: async (id) => {
+    const response = await api.delete(`/api/attachments/${id}`);
+    const { data } = response;
+    if (!data?.success) {
+      throw new Error(data?.message || "Invalid response format from server");
+    }
+    return data;
   },
 };
 
@@ -352,6 +515,7 @@ export const dashboard = {
     }
     return data.data;
   },
+
   fetchStatusData: async (filters = {}) => {
     const response = await api.get("/api/reports/status", { params: filters });
     const { data } = response;
@@ -372,6 +536,7 @@ export const caseAssignments = {
     }
     return data.data;
   },
+
   create: async (assignmentData) => {
     const response = await api.post("/api/case-assignments", assignmentData);
     const { data } = response;
@@ -380,6 +545,7 @@ export const caseAssignments = {
     }
     return data.data;
   },
+
   update: async (id, updateData) => {
     const response = await api.put(`/api/case-assignments/${id}`, updateData);
     const { data } = response;
@@ -388,6 +554,16 @@ export const caseAssignments = {
     }
     return data.data;
   },
+
+  delete: async (id) => {
+    const response = await api.delete(`/api/case-assignments/${id}`);
+    const { data } = response;
+    if (!data?.success) {
+      throw new Error(data?.message || "Invalid response format from server");
+    }
+    return data;
+  },
+
   getTeamWorkload: async () => {
     const response = await api.get("/api/case-assignments/team-workload");
     const { data } = response;
@@ -398,6 +574,14 @@ export const caseAssignments = {
   },
 };
 
+// Health check endpoint
+export const health = {
+  check: async () => {
+    const response = await api.get("/health");
+    return response.data;
+  },
+};
+
 // Add error boundary for API calls
 const withErrorBoundary = (apiCall) => {
   return async (...args) => {
@@ -405,6 +589,16 @@ const withErrorBoundary = (apiCall) => {
       return await apiCall(...args);
     } catch (error) {
       console.error("API Error:", error);
+
+      // Add additional context for debugging
+      if (error.response) {
+        console.error("Response Error:", {
+          status: error.response.status,
+          data: error.response.data,
+          headers: error.response.headers,
+        });
+      }
+
       throw error;
     }
   };
@@ -443,12 +637,9 @@ Object.keys(caseAssignments).forEach((key) => {
   caseAssignments[key] = withErrorBoundary(caseAssignments[key]);
 });
 
-if (register && typeof register === "object") {
-  Object.keys(register).forEach((key) => {
-    if (typeof register[key] === "function") {
-      register[key] = withErrorBoundary(register[key]);
-    }
-  });
-}
+Object.keys(health).forEach((key) => {
+  health[key] = withErrorBoundary(health[key]);
+});
 
 export default api;
+export { getDatabaseConnectivityStatus, checkDatabaseConnectivity };
