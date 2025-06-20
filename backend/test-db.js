@@ -1,84 +1,73 @@
-import mysql from 'mysql2/promise';
-import dotenv from 'dotenv';
+import mysql from "mysql2/promise";
+import dotenv from "dotenv";
 
 dotenv.config();
 
 async function testConnection() {
-    console.log('🔍 Testing MySQL connection...');
-    console.log('📋 Connection details from .env:');
-    console.log('   Host:', process.env.DB_HOST);
-    console.log('   User:', process.env.DB_USER);
-    console.log('   Port:', process.env.DB_PORT);
-    console.log('   Database:', process.env.DB_NAME);
+  console.log("🔍 Testing MySQL connection...");
+  console.log("📋 Connection details from .env:");
+  console.log("   Host:", process.env.DB_HOST);
+  console.log("   User:", process.env.DB_USER);
+  console.log("   Port:", process.env.DB_PORT);
+  console.log("   Database:", process.env.DB_NAME);
 
-    const testConfigs = [
-        { host: '127.0.0.1', port: 3306, name: '127.0.0.1:3306' },
-        { host: 'localhost', port: 3306, name: 'localhost:3306' },
-        { host: '127.0.0.1', port: 3307, name: '127.0.0.1:3307' },
-        { host: 'localhost', port: 3307, name: 'localhost:3307' },
-    ];
+  const testConfigs = [
+    { host: "127.0.0.1", port: 3306, name: "127.0.0.1:3306" },
+    { host: "localhost", port: 3306, name: "localhost:3306" },
+    { host: "127.0.0.1", port: 3307, name: "127.0.0.1:3307" },
+    { host: "localhost", port: 3307, name: "localhost:3307" },
+  ];
 
-    for (const config of testConfigs) {
-        try {
-            console.log(`\n🔌 Testing connection to ${config.name}...`);
-            const basicConnection = await mysql.createConnection({
-                host: config.host,
-                user: process.env.DB_USER,
-                password: process.env.DB_PASSWORD,
-                port: config.port,
-                connectTimeout: 5000
-            });
+  for (const config of testConfigs) {
+    try {
+      console.log(`\n🔌 Testing connection to ${config.name}...`);
+      const basicConnection = await mysql.createConnection({
+        host: config.host,
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        port: config.port,
+        connectTimeout: 5000,
+      });
 
-        console.log('✅ Basic MySQL connection successful!');
+      console.log(`✅ Connection to ${config.name} successful!`);
 
-        // Check available databases
-        const [databases] = await basicConnection.execute('SHOW DATABASES');
-        console.log('\n📁 Available databases:');
-        databases.forEach(db => console.log('   -', db.Database));
+      // Check available databases
+      const [databases] = await basicConnection.execute("SHOW DATABASES");
+      console.log("📁 Available databases:");
+      databases.forEach((db) => console.log("   -", db.Database));
 
-        // Check if management database exists
-        const managementExists = databases.some(db => db.Database === 'management');
-        console.log('\n🎯 Management database exists:', managementExists);
+      // Check if management database exists
+      const managementExists = databases.some(
+        (db) => db.Database === "management",
+      );
+      console.log("🎯 Management database exists:", managementExists);
 
-        if (!managementExists) {
-            console.log('🔨 Creating management database...');
-            await basicConnection.execute('CREATE DATABASE management');
-            console.log('✅ Management database created!');
-        }
+      await basicConnection.end();
 
-        await basicConnection.end();
+      // If we found a working connection, update the .env file
+      if (
+        config.host !== process.env.DB_HOST ||
+        config.port != process.env.DB_PORT
+      ) {
+        console.log(
+          `\n🔧 This connection works! Consider updating .env to use ${config.name}`,
+        );
+      }
 
-        // Now test connection to management database
-        console.log('\n🔌 Testing connection to management database...');
-        const dbConnection = await mysql.createConnection({
-            host: process.env.DB_HOST,
-            user: process.env.DB_USER,
-            password: process.env.DB_PASSWORD,
-            port: process.env.DB_PORT,
-            database: process.env.DB_NAME
-        });
-
-        console.log('✅ Management database connection successful!');
-
-        // Check tables
-        const [tables] = await dbConnection.execute('SHOW TABLES');
-        console.log('\n📋 Tables in management database:');
-        if (tables.length === 0) {
-            console.log('   (No tables found - you may need to run the schema)');
-        } else {
-            tables.forEach(table => console.log('   -', Object.values(table)[0]));
-        }
-
-        await dbConnection.end();
-
-        console.log('\n🎉 All connection tests passed!');
-
+      console.log("\n🎉 Connection test passed for", config.name);
+      return; // Exit after first successful connection
     } catch (error) {
-        console.error('\n❌ Connection failed:');
-        console.error('   Error code:', error.code);
-        console.error('   Error message:', error.message);
-        console.error('   Full error:', error);
+      console.log(`❌ Connection to ${config.name} failed:`, error.code);
     }
+  }
+
+  console.log("\n💔 All connection attempts failed");
+  console.log("🔍 Possible issues:");
+  console.log("   1. MySQL server is not running");
+  console.log("   2. MySQL is running on a different port");
+  console.log("   3. Firewall is blocking connections");
+  console.log("   4. MySQL is configured to reject connections from localhost");
+  console.log("   5. Wrong username or password");
 }
 
 testConnection();
