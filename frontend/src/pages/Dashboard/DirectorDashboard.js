@@ -46,7 +46,6 @@ import {
   Person as PersonIcon,
   Engineering as EngineeringIcon,
   Support as SupportIcon,
-  Assignment as CaseIcon,
   Speed as PerformanceIcon,
   AssignmentInd as AssignIcon,
   PriorityHigh as PriorityIcon,
