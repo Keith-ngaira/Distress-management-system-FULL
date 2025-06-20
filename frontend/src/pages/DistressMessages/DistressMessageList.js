@@ -14,7 +14,6 @@ import {
   CircularProgress,
   Alert,
   Chip,
-  useTheme,
 } from "@mui/material";
 import { distressMessages } from "../../services/api";
 
