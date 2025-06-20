@@ -1,44 +1,57 @@
 import express from "express";
 import {
-  getCaseAssignments,
+  getAllCaseAssignments,
+  getCaseAssignmentsByDirector,
+  getCaseAssignmentsByAssignee,
   createCaseAssignment,
   updateCaseAssignment,
+  reassignCase,
   getTeamWorkload,
+  getAssignmentStatistics,
+  deleteCaseAssignment,
 } from "../controllers/caseAssignmentController.js";
-import { authenticateToken, checkPermission } from "../middleware/auth.js";
+import { authenticateToken } from "../middleware/auth.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
 
 const router = express.Router();
 
-// Get all case assignments (directors and admins)
+// Get all case assignments (admin)
+router.get("/", authenticateToken, asyncHandler(getAllCaseAssignments));
+
+// Get case assignments by director
 router.get(
-  "/",
+  "/my-assignments",
   authenticateToken,
-  checkPermission("cases", "assign"),
-  getCaseAssignments,
+  asyncHandler(getCaseAssignmentsByDirector),
+);
+
+// Get case assignments by assignee
+router.get(
+  "/assigned-to-me",
+  authenticateToken,
+  asyncHandler(getCaseAssignmentsByAssignee),
 );
 
 // Create new case assignment (directors and admins)
-router.post(
-  "/",
-  authenticateToken,
-  checkPermission("cases", "assign"),
-  createCaseAssignment,
-);
+router.post("/", authenticateToken, asyncHandler(createCaseAssignment));
 
-// Update case assignment (directors and admins)
-router.put(
-  "/:id",
-  authenticateToken,
-  checkPermission("cases", "assign"),
-  updateCaseAssignment,
-);
+// Update case assignment
+router.put("/:id", authenticateToken, asyncHandler(updateCaseAssignment));
 
-// Get team workload distribution (directors and admins)
+// Reassign case
+router.post("/:id/reassign", authenticateToken, asyncHandler(reassignCase));
+
+// Get team workload distribution
+router.get("/team-workload", authenticateToken, asyncHandler(getTeamWorkload));
+
+// Get assignment statistics
 router.get(
-  "/team-workload",
+  "/statistics",
   authenticateToken,
-  checkPermission("cases", "assign"),
-  getTeamWorkload,
+  asyncHandler(getAssignmentStatistics),
 );
+
+// Delete case assignment (admin only)
+router.delete("/:id", authenticateToken, asyncHandler(deleteCaseAssignment));
 
 export default router;
