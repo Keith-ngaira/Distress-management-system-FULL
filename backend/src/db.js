@@ -4,6 +4,9 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
+// Check if running in development mode without database
+const isDevModeNoDB = process.env.DEV_MODE_NO_DB === "true";
+
 const poolConfig = {
   host: process.env.DB_HOST || "localhost",
   user: process.env.DB_USER || "root",
@@ -26,11 +29,19 @@ const poolConfig = {
       : false,
 };
 
+if (isDevModeNoDB) {
+  logger.warn("⚠️  RUNNING IN DEVELOPMENT MODE WITHOUT DATABASE");
+  logger.warn("💡 Database operations will be mocked");
+  logger.warn(
+    "🔧 To use real database, set DEV_MODE_NO_DB=false in .env and ensure MySQL is running",
+  );
+}
+
 logger.info(
   `Creating MySQL connection pool for ${poolConfig.host}:${poolConfig.port} (database: ${poolConfig.database})`,
 );
 
-const pool = mysql.createPool(poolConfig);
+const pool = isDevModeNoDB ? null : mysql.createPool(poolConfig);
 
 // Database connection state
 let dbConnected = false;
