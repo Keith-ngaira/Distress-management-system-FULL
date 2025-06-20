@@ -11,6 +11,7 @@ import distressRoutes from "./routes/distressRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
+import caseAssignmentRoutes from "./routes/caseAssignmentRoutes.js";
 import { requestLogger, errorLogger, logger } from "./middleware/logger.js";
 import { authenticateToken } from "./middleware/auth.js";
 import path from "path";
@@ -176,6 +177,7 @@ app.use("/api/distress-messages", authenticateToken, distressRoutes);
 app.use("/api/dashboard", authenticateToken, dashboardRoutes);
 app.use("/api/users", authenticateToken, userRoutes);
 app.use("/api/notifications", authenticateToken, notificationRoutes);
+app.use("/api/case-assignments", authenticateToken, caseAssignmentRoutes);
 
 // Error handling
 app.use(errorLogger);

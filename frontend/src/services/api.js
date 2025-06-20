@@ -131,6 +131,22 @@ export const users = {
     }
     return data.data;
   },
+  getAll: async () => {
+    const response = await api.get("/api/users");
+    const { data } = response;
+    if (!data?.success || !data?.data) {
+      throw new Error(data?.message || "Invalid response format from server");
+    }
+    return data.data;
+  },
+  create: async (userData) => {
+    const response = await api.post("/api/users", userData);
+    const { data } = response;
+    if (!data?.success || !data?.data) {
+      throw new Error(data?.message || "Invalid response format from server");
+    }
+    return data.data;
+  },
   update: async (userId, userData) => {
     const response = await api.put(`/api/users/${userId}`, userData);
     const { data } = response;
@@ -139,23 +155,19 @@ export const users = {
     }
     return data.data;
   },
-};
-
-// User registration
-export const register = {
-  create: async (username, password, email, role) => {
-    const response = await api.post("/api/auth/register", {
-      username,
-      password,
-      email,
-      role,
-    });
+  delete: async (userId) => {
+    const response = await api.delete(`/api/users/${userId}`);
     const { data } = response;
-    if (!data?.success || !data?.data) {
+    if (!data?.success) {
       throw new Error(data?.message || "Invalid response format from server");
     }
-    return data.data;
+    return data;
   },
+};
+
+// User registration (legacy - use users.create instead)
+export const register = async (username, password, email, role) => {
+  return users.create({ username, password, email, role });
 };
 
 // Distress messages endpoints
@@ -188,6 +200,17 @@ export const distressMessages = {
   },
   update: async (id, messageData) => {
     const response = await api.put(`/api/distress-messages/${id}`, messageData);
+    const { data } = response;
+    if (!data?.success || !data?.data) {
+      throw new Error(data?.message || "Invalid response format from server");
+    }
+    return data.data;
+  },
+  addUpdate: async (id, updateData) => {
+    const response = await api.post(
+      `/api/distress-messages/${id}/updates`,
+      updateData,
+    );
     const { data } = response;
     if (!data?.success || !data?.data) {
       throw new Error(data?.message || "Invalid response format from server");
@@ -339,6 +362,42 @@ export const dashboard = {
   },
 };
 
+// Case Assignment endpoints (Director functionality)
+export const caseAssignments = {
+  getAll: async () => {
+    const response = await api.get("/api/case-assignments");
+    const { data } = response;
+    if (!data?.success || !data?.data) {
+      throw new Error(data?.message || "Invalid response format from server");
+    }
+    return data.data;
+  },
+  create: async (assignmentData) => {
+    const response = await api.post("/api/case-assignments", assignmentData);
+    const { data } = response;
+    if (!data?.success || !data?.data) {
+      throw new Error(data?.message || "Invalid response format from server");
+    }
+    return data.data;
+  },
+  update: async (id, updateData) => {
+    const response = await api.put(`/api/case-assignments/${id}`, updateData);
+    const { data } = response;
+    if (!data?.success || !data?.data) {
+      throw new Error(data?.message || "Invalid response format from server");
+    }
+    return data.data;
+  },
+  getTeamWorkload: async () => {
+    const response = await api.get("/api/case-assignments/team-workload");
+    const { data } = response;
+    if (!data?.success || !data?.data) {
+      throw new Error(data?.message || "Invalid response format from server");
+    }
+    return data.data;
+  },
+};
+
 // Add error boundary for API calls
 const withErrorBoundary = (apiCall) => {
   return async (...args) => {
@@ -378,6 +437,10 @@ Object.keys(attachments).forEach((key) => {
 
 Object.keys(dashboard).forEach((key) => {
   dashboard[key] = withErrorBoundary(dashboard[key]);
+});
+
+Object.keys(caseAssignments).forEach((key) => {
+  caseAssignments[key] = withErrorBoundary(caseAssignments[key]);
 });
 
 if (register && typeof register === "object") {

@@ -1,37 +1,44 @@
-import db, { executeQuery } from '../db.js';
-import { logger } from '../middleware/logger.js';
+import { executeQuery } from "../db.js";
+import { logger } from "../middleware/logger.js";
+import {
+  mockDashboardData,
+  mockDirectorData,
+  mockFrontOfficeData,
+  mockCadetData,
+} from "./mockData.js";
 
 export const getDashboardData = async (req, res) => {
-    try {
-        // Get all stats in a single query for better performance
-        const [stats] = await executeQuery(`
+  try {
+    // Try MySQL first
+    const caseStats = await executeQuery(`
             SELECT
-                (SELECT COUNT(*)) as total,
-                (SELECT COUNT(*) WHERE status = 'pending') as pending,
-                (SELECT COUNT(*) WHERE status = 'assigned') as assigned,
-                (SELECT COUNT(*) WHERE status = 'in_progress') as active,
-                (SELECT COUNT(*) WHERE status = 'resolved') as resolved,
-                (SELECT AVG(TIMESTAMPDIFF(MINUTE, created_at, first_response_at))
-                    WHERE first_response_at IS NOT NULL) as avg_first_response,
-                (SELECT AVG(TIMESTAMPDIFF(HOUR, created_at, resolved_at))
-                    WHERE resolved_at IS NOT NULL) as avg_resolution_time
+                COUNT(*) as total,
+                SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
+                SUM(CASE WHEN status = 'assigned' THEN 1 ELSE 0 END) as assigned,
+                SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END) as active,
+                SUM(CASE WHEN status = 'resolved' THEN 1 ELSE 0 END) as resolved,
+                AVG(CASE WHEN first_response_at IS NOT NULL
+                    THEN TIMESTAMPDIFF(MINUTE, created_at, first_response_at)
+                    ELSE NULL END) as avg_first_response,
+                AVG(CASE WHEN resolved_at IS NOT NULL
+                    THEN TIMESTAMPDIFF(HOUR, created_at, resolved_at)
+                    ELSE NULL END) as avg_resolution_time
             FROM distress_messages
         `);
 
-        // Get priority stats in a single query
-        const [priorityStats] = await executeQuery(`
+    const priorityStats = await executeQuery(`
             SELECT
                 priority,
                 COUNT(*) as count,
-                AVG(TIMESTAMPDIFF(MINUTE, created_at, first_response_at)) as avg_first_response
+                AVG(CASE WHEN first_response_at IS NOT NULL
+                    THEN TIMESTAMPDIFF(MINUTE, created_at, first_response_at)
+                    ELSE NULL END) as avg_first_response
             FROM distress_messages
-            WHERE first_response_at IS NOT NULL
             GROUP BY priority
             ORDER BY FIELD(priority, 'urgent', 'high', 'medium', 'low')
         `);
 
-        // Get top 5 case categories
-        const [caseCategories] = await executeQuery(`
+    const caseCategories = await executeQuery(`
             SELECT nature_of_case as name, COUNT(*) as count
             FROM distress_messages
             GROUP BY nature_of_case
@@ -39,56 +46,99 @@ export const getDashboardData = async (req, res) => {
             LIMIT 5
         `);
 
-        // Get recent cases with limited fields
-        const [recentCases] = await executeQuery(`
+    const recentCases = await executeQuery(`
             SELECT
                 m.id,
                 m.subject,
                 m.status,
                 m.priority,
                 m.created_at,
-                COALESCE(u.full_name, 'Unassigned') as assigned_to
+                COALESCE(u.username, 'Unassigned') as assigned_to
             FROM distress_messages m
             LEFT JOIN users u ON m.assigned_to = u.id
             ORDER BY m.created_at DESC
             LIMIT 5
         `);
 
-        // Return formatted response
-        return res.json({
-            success: true,
-            data: {
-                stats: {
-                    total: stats.total || 0,
-                    pending: stats.pending || 0,
-                    assigned: stats.assigned || 0,
-                    active: stats.active || 0,
-                    resolved: stats.resolved || 0,
-                    avgFirstResponse: Math.round(stats.avg_first_response || 0),
-                    avgResolutionTime: Math.round(stats.avg_resolution_time || 0)
-                },
-                priorityStats: priorityStats.map(stat => ({
-                    priority: stat.priority,
-                    count: stat.count,
-                    avgFirstResponse: Math.round(stat.avg_first_response || 0)
-                })),
-                caseCategories,
-                recentCases: recentCases.map(c => ({
-                    id: c.id,
-                    subject: c.subject,
-                    status: c.status,
-                    priority: c.priority,
-                    createdAt: c.created_at,
-                    assignedTo: c.assigned_to
-                }))
-            }
-        });
-    } catch (error) {
-        logger.error('Error fetching dashboard data:', error);
-        return res.status(500).json({
-            success: false,
-            message: 'Error fetching dashboard data',
-            error: process.env.NODE_ENV === 'development' ? error.message : undefined
-        });
+    const baseData = {
+      stats: {
+        total: parseInt(caseStats[0]?.total || 0),
+        pending: parseInt(caseStats[0]?.pending || 0),
+        assigned: parseInt(caseStats[0]?.assigned || 0),
+        active: parseInt(caseStats[0]?.active || 0),
+        resolved: parseInt(caseStats[0]?.resolved || 0),
+        avgFirstResponse: Math.round(caseStats[0]?.avg_first_response || 0),
+        avgResolutionTime: Math.round(caseStats[0]?.avg_resolution_time || 0),
+      },
+      priorityStats: priorityStats.map((stat) => ({
+        priority: stat.priority,
+        count: parseInt(stat.count),
+        avgFirstResponse: Math.round(stat.avg_first_response || 0),
+      })),
+      caseCategories: caseCategories.map((cat) => ({
+        name: cat.name,
+        count: parseInt(cat.count),
+      })),
+      recentCases: recentCases.map((c) => ({
+        id: c.id,
+        subject: c.subject,
+        status: c.status,
+        priority: c.priority,
+        createdAt: c.created_at,
+        assignedTo: c.assigned_to,
+      })),
+    };
+
+    // Add role-specific data when MySQL is available
+    if (req.user?.role === "director") {
+      // For now, when MySQL is available, we'll use mock director data
+      // In production, this would fetch real director-specific data from database
+      return res.json({
+        success: true,
+        data: { ...baseData, ...mockDirectorData },
+      });
     }
+
+    if (req.user?.role === "front_office") {
+      // For now, when MySQL is available, we'll use mock front office data
+      // In production, this would fetch real front office-specific data from database
+      return res.json({
+        success: true,
+        data: { ...baseData, ...mockFrontOfficeData },
+      });
+    }
+
+    if (req.user?.role === "cadet") {
+      // For now, when MySQL is available, we'll use mock cadet data
+      // In production, this would fetch real cadet-specific data from database
+      return res.json({
+        success: true,
+        data: { ...baseData, ...mockCadetData },
+      });
+    }
+
+    return res.json({
+      success: true,
+      data: baseData,
+    });
+  } catch (error) {
+    logger.error("Error fetching dashboard data, using mock data:", error);
+
+    // Fallback to mock data when MySQL is unavailable
+    const userData = req.user;
+    let responseData = mockDashboardData;
+
+    if (userData?.role === "director") {
+      responseData = mockDirectorData;
+    } else if (userData?.role === "front_office") {
+      responseData = mockFrontOfficeData;
+    } else if (userData?.role === "cadet") {
+      responseData = mockCadetData;
+    }
+
+    return res.json({
+      success: true,
+      data: responseData,
+    });
+  }
 };

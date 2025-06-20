@@ -14,7 +14,6 @@ import {
   CircularProgress,
   Alert,
   Chip,
-  useTheme,
 } from "@mui/material";
 import { distressMessages } from "../../services/api";
 
@@ -23,7 +22,6 @@ const DistressMessageList = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
-  const theme = useTheme();
 
   useEffect(() => {
     const fetchMessages = async () => {
