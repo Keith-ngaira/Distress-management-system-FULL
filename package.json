@@ -15,7 +15,8 @@
     "build:frontend": "cd frontend && npm run build",
     "test": "npm run test:frontend",
     "test:frontend": "cd frontend && npm test",
-    "test-db": "cd backend && npm run test-db"
+    "test-db": "cd backend && npm run test-db",
+    "setup-db": "cd backend && npm run setup-db"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
