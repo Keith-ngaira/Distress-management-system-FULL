@@ -14,8 +14,6 @@ const poolConfig = {
   connectionLimit: 20,
   queueLimit: 0,
   multipleStatements: true,
-  acquireTimeout: 60000,
-  connectionTimeout: 60000,
   idleTimeout: 300000,
   // Additional MySQL options for better reliability
   charset: "utf8mb4",
