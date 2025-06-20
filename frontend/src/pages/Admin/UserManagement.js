@@ -104,7 +104,7 @@ const UserManagement = () => {
 
   useEffect(() => {
     filterUsers();
-  }, [users, searchTerm, roleFilter, statusFilter, filterUsers]); // Added filterUsers to dependencies
+  }, [users, searchTerm, roleFilter, statusFilter]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchUsers = async () => {
     try {
