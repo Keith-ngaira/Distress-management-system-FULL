@@ -642,4 +642,3 @@ Object.keys(health).forEach((key) => {
 });
 
 export default api;
-export { getDatabaseConnectivityStatus, checkDatabaseConnectivity };
