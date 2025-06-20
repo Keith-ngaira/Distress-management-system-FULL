@@ -152,21 +152,6 @@ const FrontOfficeDashboard = () => {
     }
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "urgent":
-        return theme.palette.error.main;
-      case "resolved":
-        return theme.palette.success.main;
-      case "in_progress":
-        return theme.palette.warning.main;
-      case "assigned":
-        return theme.palette.info.main;
-      default:
-        return theme.palette.grey[500];
-    }
-  };
-
   const getStatusIcon = (status) => {
     switch (status) {
       case "resolved":
