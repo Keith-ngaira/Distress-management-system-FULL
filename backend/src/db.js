@@ -177,6 +177,17 @@ const executeTransaction = async (queries) => {
 
 // Test database connection
 const testConnection = async () => {
+  // Handle development mode without database
+  if (isDevModeNoDB) {
+    if (!dbConnected) {
+      logger.info(
+        "🔧 Running in development mode - database operations mocked",
+      );
+      dbConnected = true;
+    }
+    return true;
+  }
+
   try {
     const connection = await pool.getConnection();
     await connection.query("SELECT 1 as test");
