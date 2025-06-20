@@ -39,3 +39,5 @@ router.put("/:id", authenticateToken, asyncHandler(updateUser));
 router.delete("/:id", authenticateToken, asyncHandler(deleteUser));
 
 export default router;
+
+export { router as userRoutes };

@@ -27,3 +27,5 @@ router.put('/mark-all-read', authenticateToken, asyncHandler(markAllAsRead));
 router.delete('/:id', authenticateToken, asyncHandler(deleteNotification));
 
 export default router;
+
+export { router as notificationRoutes };

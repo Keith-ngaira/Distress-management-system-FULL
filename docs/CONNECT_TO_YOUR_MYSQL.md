@@ -77,10 +77,10 @@ After setting up the database, these users will be available:
 
 With the current SQLite setup, use:
 
-- **admin** / password123 (admin role)
-- **director** / password123 (director role)
-- **frontoffice** / password123 (front_office role)
-- **cadet** / password123 (cadet role)
+- **admin** / admin123 (admin role)
+- **director** / director123 (director role)
+- **frontoffice** / frontoffice123 (front_office role)
+- **cadet** / cadet123 (cadet role)
 
 ## Troubleshooting
 

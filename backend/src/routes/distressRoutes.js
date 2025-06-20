@@ -47,3 +47,5 @@ router.post(
 router.delete("/:id", authenticateToken, asyncHandler(deleteDistressMessage));
 
 export default router;
+
+export { router as distressRoutes };

@@ -55,3 +55,5 @@ router.get(
 router.delete("/:id", authenticateToken, asyncHandler(deleteCaseAssignment));
 
 export default router;
+
+export { router as caseAssignmentRoutes };

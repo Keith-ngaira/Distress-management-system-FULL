@@ -8,3 +8,5 @@ const router = express.Router();
 router.get('/', authenticateToken, checkPermission('dashboard', 'view'), getDashboardData);
 
 export default router;
+
+export { router as dashboardRoutes };
