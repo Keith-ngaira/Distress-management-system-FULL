@@ -164,9 +164,28 @@ const Layout = () => {
           p: 3,
           width: { sm: `calc(100% - ${drawerWidth}px)` },
           mt: "64px",
+          display: "flex",
+          flexDirection: "column",
+          minHeight: "calc(100vh - 64px)",
         }}
       >
-        <Outlet />
+        <Box sx={{ flexGrow: 1 }}>
+          <Outlet />
+        </Box>
+        <Box
+          component="footer"
+          sx={{
+            textAlign: "center",
+            py: 2,
+            mt: 3,
+            borderTop: "1px solid",
+            borderColor: "divider",
+          }}
+        >
+          <Typography variant="body2" color="text.secondary">
+            Built with ❤︎ by Keith Ngaira
+          </Typography>
+        </Box>
       </Box>
     </Box>
   );
