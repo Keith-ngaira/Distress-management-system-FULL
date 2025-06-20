@@ -235,6 +235,11 @@ const isConnected = () => dbConnected;
 
 // Close all connections gracefully
 const closePool = async () => {
+  if (isDevModeNoDB) {
+    logger.info("Development mode - no database pool to close");
+    return;
+  }
+
   try {
     await pool.end();
     logger.info("Database connection pool closed");
