@@ -64,8 +64,8 @@ const FloatingParticle = styled(Box)(({ theme, delay = 0, size = 4 }) => ({
 }));
 
 const GlassmorphismPaper = styled(Paper)(({ theme }) => ({
-  background: `linear-gradient(135deg, 
-        ${alpha(theme.palette.background.paper, 0.9)} 0%, 
+  background: `linear-gradient(135deg,
+        ${alpha(theme.palette.background.paper, 0.9)} 0%,
         ${alpha(theme.palette.background.paper, 0.7)} 100%)`,
   backdropFilter: "blur(20px)",
   border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
@@ -83,10 +83,10 @@ const GlassmorphismPaper = styled(Paper)(({ theme }) => ({
     left: 0,
     right: 0,
     height: "2px",
-    background: `linear-gradient(90deg, 
-            transparent, 
-            ${theme.palette.primary.main}, 
-            ${theme.palette.secondary.main}, 
+    background: `linear-gradient(90deg,
+            transparent,
+            ${theme.palette.primary.main},
+            ${theme.palette.secondary.main},
             transparent)`,
     animation: `${shimmer} 3s ease-in-out infinite`,
   },
@@ -94,8 +94,8 @@ const GlassmorphismPaper = styled(Paper)(({ theme }) => ({
 
 const FuturisticTextField = styled(TextField)(({ theme }) => ({
   "& .MuiOutlinedInput-root": {
-    background: `linear-gradient(135deg, 
-            ${alpha(theme.palette.background.paper, 0.8)} 0%, 
+    background: `linear-gradient(135deg,
+            ${alpha(theme.palette.background.paper, 0.8)} 0%,
             ${alpha(theme.palette.background.paper, 0.6)} 100%)`,
     backdropFilter: "blur(10px)",
     borderRadius: 12,
@@ -128,8 +128,8 @@ const FuturisticButton = styled(Button)(({ theme }) => ({
   fontWeight: 600,
   fontSize: "1.1rem",
   textTransform: "none",
-  background: `linear-gradient(135deg, 
-        ${theme.palette.primary.main} 0%, 
+  background: `linear-gradient(135deg,
+        ${theme.palette.primary.main} 0%,
         ${theme.palette.primary.dark} 100%)`,
   boxShadow: `
         0 4px 20px ${alpha(theme.palette.primary.main, 0.3)},
@@ -144,8 +144,8 @@ const FuturisticButton = styled(Button)(({ theme }) => ({
             0 8px 30px ${alpha(theme.palette.primary.main, 0.4)},
             inset 0 1px 0 ${alpha("#ffffff", 0.2)}
         `,
-    background: `linear-gradient(135deg, 
-            ${theme.palette.primary.light} 0%, 
+    background: `linear-gradient(135deg,
+            ${theme.palette.primary.light} 0%,
             ${theme.palette.primary.main} 100%)`,
   },
   "&:disabled": {
@@ -159,9 +159,9 @@ const FuturisticButton = styled(Button)(({ theme }) => ({
     left: "-100%",
     width: "100%",
     height: "100%",
-    background: `linear-gradient(90deg, 
-            transparent, 
-            ${alpha("#ffffff", 0.2)}, 
+    background: `linear-gradient(90deg,
+            transparent,
+            ${alpha("#ffffff", 0.2)},
             transparent)`,
     transition: "left 0.5s ease",
   },
@@ -170,7 +170,9 @@ const FuturisticButton = styled(Button)(({ theme }) => ({
   },
 }));
 
-const RoleIcon = styled(Box)(({ theme, active }) => ({
+const RoleIcon = styled(Box, {
+  shouldForwardProp: (prop) => prop !== "active",
+})(({ theme, active }) => ({
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
@@ -197,17 +199,17 @@ const BackgroundContainer = styled(Box)(({ theme }) => ({
   left: 0,
   width: "100%",
   height: "100%",
-  background: `radial-gradient(circle at 20% 80%, 
-        ${alpha(theme.palette.primary.main, 0.15)} 0%, 
+  background: `radial-gradient(circle at 20% 80%,
+        ${alpha(theme.palette.primary.main, 0.15)} 0%,
         transparent 50%),
-        radial-gradient(circle at 80% 20%, 
-        ${alpha(theme.palette.secondary.main, 0.15)} 0%, 
+        radial-gradient(circle at 80% 20%,
+        ${alpha(theme.palette.secondary.main, 0.15)} 0%,
         transparent 50%),
-        radial-gradient(circle at 40% 40%, 
-        ${alpha(theme.palette.info.main, 0.1)} 0%, 
+        radial-gradient(circle at 40% 40%,
+        ${alpha(theme.palette.info.main, 0.1)} 0%,
         transparent 50%),
-        linear-gradient(135deg, 
-        ${theme.palette.background.default} 0%, 
+        linear-gradient(135deg,
+        ${theme.palette.background.default} 0%,
         ${alpha(theme.palette.primary.main, 0.05)} 100%)`,
   zIndex: -2,
 }));
@@ -328,8 +330,8 @@ const Login = () => {
                       width: 80,
                       height: 80,
                       borderRadius: "50%",
-                      background: `linear-gradient(135deg, 
-                                                ${theme.palette.primary.main}, 
+                      background: `linear-gradient(135deg,
+                                                ${theme.palette.primary.main},
                                                 ${theme.palette.secondary.main})`,
                       mb: 2,
                       animation: `${glowPulse} 3s ease-in-out infinite`,
@@ -341,8 +343,8 @@ const Login = () => {
                     variant="h3"
                     sx={{
                       fontWeight: 700,
-                      background: `linear-gradient(135deg, 
-                                                ${theme.palette.primary.main}, 
+                      background: `linear-gradient(135deg,
+                                                ${theme.palette.primary.main},
                                                 ${theme.palette.secondary.main})`,
                       backgroundClip: "text",
                       WebkitBackgroundClip: "text",

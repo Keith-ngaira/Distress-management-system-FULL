@@ -3,8 +3,8 @@ import axios from "axios";
 // Detect if running in Builder.io proxy environment
 const isBuilderProxy = window.location.hostname.includes("builder.codes");
 const API_BASE_URL = isBuilderProxy
-  ? "" // Use relative URL for proxy
-  : process.env.REACT_APP_API_URL || "http://localhost:5556";
+  ? "/api" // Use relative URL with /api prefix for proxy
+  : process.env.REACT_APP_API_URL || "http://localhost:5556/api";
 
 // Log API configuration in development only
 if (process.env.NODE_ENV === "development") {
@@ -144,7 +144,7 @@ export const checkDatabaseConnectivity = async () => {
 // Auth endpoints
 export const auth = {
   login: async (username, password) => {
-    const response = await api.post("/api/auth/login", { username, password });
+    const response = await api.post("/auth/login", { username, password });
     const { data } = response;
     if (!data?.success || !data?.data?.token || !data?.data?.user) {
       throw new Error(data?.message || "Invalid response format from server");
@@ -159,7 +159,7 @@ export const auth = {
 
   logout: async () => {
     try {
-      await api.post("/api/auth/logout");
+      await api.post("/auth/logout");
     } catch (error) {
       console.warn("Logout request failed:", error.message);
     } finally {
@@ -170,7 +170,7 @@ export const auth = {
   },
 
   changePassword: async (data) => {
-    const response = await api.post("/api/auth/change-password", data);
+    const response = await api.post("/auth/change-password", data);
     const { data: responseData } = response;
     if (!responseData?.success) {
       throw new Error(
@@ -181,7 +181,7 @@ export const auth = {
   },
 
   refreshToken: async () => {
-    const response = await api.post("/api/auth/refresh");
+    const response = await api.post("/auth/refresh");
     const { data } = response;
     if (!data?.success || !data?.data?.token) {
       throw new Error(data?.message || "Token refresh failed");
@@ -193,7 +193,7 @@ export const auth = {
   },
 
   verifyToken: async () => {
-    const response = await api.get("/api/auth/verify");
+    const response = await api.get("/auth/verify");
     const { data } = response;
     if (!data?.success) {
       throw new Error(data?.message || "Token verification failed");

@@ -12,6 +12,7 @@ import dashboardRoutes from "./routes/dashboardRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
 import caseAssignmentRoutes from "./routes/caseAssignmentRoutes.js";
+import builderRoutes from "./routes/builderRoutes.js";
 import { requestLogger, errorLogger, logger } from "./middleware/logger.js";
 import { authenticateToken } from "./middleware/auth.js";
 import path from "path";
@@ -152,6 +153,7 @@ app.get("/", (req, res) => {
       health: "/health",
       auth: "/api/auth/*",
       api: "/api/*",
+      builder: "/api/builder/*",
     },
   });
 });
@@ -178,6 +180,7 @@ app.use("/api/dashboard", authenticateToken, dashboardRoutes);
 app.use("/api/users", authenticateToken, userRoutes);
 app.use("/api/notifications", authenticateToken, notificationRoutes);
 app.use("/api/case-assignments", authenticateToken, caseAssignmentRoutes);
+app.use("/api/builder", authenticateToken, builderRoutes);
 
 // Error handling
 app.use(errorLogger);
