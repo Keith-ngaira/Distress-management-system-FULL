@@ -4,6 +4,9 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
+// Check if running in development mode without database
+const isDevModeNoDB = process.env.DEV_MODE_NO_DB === "true";
+
 const poolConfig = {
   host: process.env.DB_HOST || "localhost",
   user: process.env.DB_USER || "root",
@@ -26,11 +29,19 @@ const poolConfig = {
       : false,
 };
 
+if (isDevModeNoDB) {
+  logger.warn("⚠️  RUNNING IN DEVELOPMENT MODE WITHOUT DATABASE");
+  logger.warn("💡 Database operations will be mocked");
+  logger.warn(
+    "🔧 To use real database, set DEV_MODE_NO_DB=false in .env and ensure MySQL is running",
+  );
+}
+
 logger.info(
   `Creating MySQL connection pool for ${poolConfig.host}:${poolConfig.port} (database: ${poolConfig.database})`,
 );
 
-const pool = mysql.createPool(poolConfig);
+const pool = isDevModeNoDB ? null : mysql.createPool(poolConfig);
 
 // Database connection state
 let dbConnected = false;
@@ -39,6 +50,26 @@ const CONNECTION_TEST_INTERVAL = 30000; // 30 seconds
 
 // Execute a query with comprehensive error handling and retry logic
 const executeQuery = async (sql, params = [], retryCount = 0) => {
+  // Handle development mode without database
+  if (isDevModeNoDB) {
+    logger.info(
+      `Mock query executed: ${sql.substring(0, 100)}${sql.length > 100 ? "..." : ""}`,
+    );
+
+    // Return mock data based on query type
+    if (sql.toLowerCase().includes("select")) {
+      return []; // Return empty result set
+    } else if (sql.toLowerCase().includes("insert")) {
+      return { insertId: Math.floor(Math.random() * 1000), affectedRows: 1 };
+    } else if (
+      sql.toLowerCase().includes("update") ||
+      sql.toLowerCase().includes("delete")
+    ) {
+      return { affectedRows: 1, changedRows: 1 };
+    }
+    return { affectedRows: 1 };
+  }
+
   const maxRetries = 3;
   let connection;
 
@@ -98,6 +129,23 @@ const executeQuery = async (sql, params = [], retryCount = 0) => {
 
 // Execute multiple queries in a transaction
 const executeTransaction = async (queries) => {
+  // Handle development mode without database
+  if (isDevModeNoDB) {
+    logger.info(`Mock transaction executed with ${queries.length} queries`);
+    const results = [];
+    for (const { sql } of queries) {
+      if (sql.toLowerCase().includes("insert")) {
+        results.push({
+          insertId: Math.floor(Math.random() * 1000),
+          affectedRows: 1,
+        });
+      } else {
+        results.push({ affectedRows: 1 });
+      }
+    }
+    return results;
+  }
+
   let connection;
   try {
     connection = await pool.getConnection();
@@ -129,6 +177,17 @@ const executeTransaction = async (queries) => {
 
 // Test database connection
 const testConnection = async () => {
+  // Handle development mode without database
+  if (isDevModeNoDB) {
+    if (!dbConnected) {
+      logger.info(
+        "🔧 Running in development mode - database operations mocked",
+      );
+      dbConnected = true;
+    }
+    return true;
+  }
+
   try {
     const connection = await pool.getConnection();
     await connection.query("SELECT 1 as test");
@@ -176,6 +235,11 @@ const isConnected = () => dbConnected;
 
 // Close all connections gracefully
 const closePool = async () => {
+  if (isDevModeNoDB) {
+    logger.info("Development mode - no database pool to close");
+    return;
+  }
+
   try {
     await pool.end();
     logger.info("Database connection pool closed");

@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 
 // Load environment variables
 dotenv.config();
@@ -91,7 +91,7 @@ async function runMigrations(connection) {
                     last_login TIMESTAMP NULL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                    
+
                     INDEX idx_username (username),
                     INDEX idx_email (email),
                     INDEX idx_role (role),
@@ -122,10 +122,10 @@ async function runMigrations(connection) {
                     first_response_at TIMESTAMP NULL,
                     resolved_at TIMESTAMP NULL,
                     resolution_notes TEXT,
-                    
+
                     FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
                     FOREIGN KEY (assigned_to) REFERENCES users(id) ON DELETE SET NULL,
-                    
+
                     INDEX idx_folio_number (folio_number),
                     INDEX idx_reference_number (reference_number),
                     INDEX idx_status (status),
@@ -149,10 +149,10 @@ async function runMigrations(connection) {
                     updated_by INT NOT NULL,
                     update_text TEXT NOT NULL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    
+
                     FOREIGN KEY (distress_message_id) REFERENCES distress_messages(id) ON DELETE CASCADE,
                     FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE NO ACTION,
-                    
+
                     INDEX idx_distress_message_id (distress_message_id),
                     INDEX idx_created_at (created_at),
                     INDEX idx_updated_by_created_at (updated_by, created_at)
@@ -172,11 +172,11 @@ async function runMigrations(connection) {
                     status ENUM('active', 'completed', 'reassigned') DEFAULT 'active',
                     completed_at TIMESTAMP NULL,
                     completion_notes TEXT,
-                    
+
                     FOREIGN KEY (distress_message_id) REFERENCES distress_messages(id) ON DELETE CASCADE,
                     FOREIGN KEY (assigned_by) REFERENCES users(id) ON DELETE NO ACTION,
                     FOREIGN KEY (assigned_to) REFERENCES users(id) ON DELETE NO ACTION,
-                    
+
                     INDEX idx_distress_message_id (distress_message_id),
                     INDEX idx_assigned_to (assigned_to),
                     INDEX idx_assigned_by (assigned_by),
@@ -199,10 +199,10 @@ async function runMigrations(connection) {
                     file_size BIGINT,
                     uploaded_by INT NOT NULL,
                     uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    
+
                     FOREIGN KEY (distress_message_id) REFERENCES distress_messages(id) ON DELETE CASCADE,
                     FOREIGN KEY (uploaded_by) REFERENCES users(id) ON DELETE NO ACTION,
-                    
+
                     INDEX idx_distress_message_id (distress_message_id),
                     INDEX idx_uploaded_at (uploaded_at),
                     INDEX idx_file_type (file_type),
@@ -226,9 +226,9 @@ async function runMigrations(connection) {
                     read_at TIMESTAMP NULL,
                     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                     expires_at TIMESTAMP NULL,
-                    
+
                     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-                    
+
                     INDEX idx_user_unread (user_id, read_at),
                     INDEX idx_reference (reference_type, reference_id),
                     INDEX idx_expires_at (expires_at),
@@ -251,9 +251,9 @@ async function runMigrations(connection) {
                     ip_address VARCHAR(45),
                     user_agent VARCHAR(255),
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    
+
                     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
-                    
+
                     INDEX idx_user_id (user_id),
                     INDEX idx_action_type (action_type),
                     INDEX idx_entity_type_id (entity_type, entity_id),
@@ -275,7 +275,7 @@ async function runMigrations(connection) {
                     error_message TEXT,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                    
+
                     INDEX idx_next_run (next_run),
                     INDEX idx_event_type (event_type),
                     INDEX idx_status (status)
@@ -588,9 +588,9 @@ async function seedData(connection) {
     for (const message of messages) {
       await connection.execute(
         `
-                INSERT INTO distress_messages 
-                (folio_number, sender_name, reference_number, subject, country_of_origin, distressed_person_name, nature_of_case, case_details, priority, status, created_by, assigned_to, created_at, first_response_at, resolved_at) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
+                INSERT INTO distress_messages
+                (folio_number, sender_name, reference_number, subject, country_of_origin, distressed_person_name, nature_of_case, case_details, priority, status, created_by, assigned_to, created_at, first_response_at, resolved_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                     DATE_SUB(NOW(), INTERVAL FLOOR(RAND() * 30) DAY),
                     CASE WHEN ? != 'pending' THEN DATE_SUB(NOW(), INTERVAL FLOOR(RAND() * 29) DAY) ELSE NULL END,
                     CASE WHEN ? = 'resolved' THEN DATE_SUB(NOW(), INTERVAL FLOOR(RAND() * 15) DAY) ELSE NULL END)
@@ -634,11 +634,11 @@ async function displayStatistics(connection) {
 
   try {
     const [userStats] = await connection.execute(`
-            SELECT 
+            SELECT
                 role,
                 COUNT(*) as total_users,
                 SUM(CASE WHEN is_active = TRUE THEN 1 ELSE 0 END) as active_users
-            FROM users 
+            FROM users
             GROUP BY role
             ORDER BY FIELD(role, 'admin', 'director', 'front_office', 'cadet')
         `);
@@ -651,10 +651,10 @@ async function displayStatistics(connection) {
     });
 
     const [messageStats] = await connection.execute(`
-            SELECT 
+            SELECT
                 status,
                 COUNT(*) as count
-            FROM distress_messages 
+            FROM distress_messages
             GROUP BY status
             ORDER BY FIELD(status, 'pending', 'assigned', 'in_progress', 'resolved')
         `);
