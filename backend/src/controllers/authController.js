@@ -1,4 +1,4 @@
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { executeQuery, isConnected } from "../db.js";
 import { logger } from "../middleware/logger.js";
@@ -29,7 +29,7 @@ export const loginUser = async (req, res) => {
       // Get user from database
       const users = await executeQuery(
         `
-                SELECT 
+                SELECT
                     id,
                     username,
                     password,
@@ -38,7 +38,7 @@ export const loginUser = async (req, res) => {
                     is_active,
                     last_login,
                     created_at
-                FROM users 
+                FROM users
                 WHERE username = ? AND is_active = 1
             `,
         [username],
@@ -199,7 +199,7 @@ export const changePassword = async (req, res) => {
       const users = await executeQuery(
         `
                 SELECT id, password
-                FROM users 
+                FROM users
                 WHERE id = ? AND is_active = 1
             `,
         [userId],
@@ -237,7 +237,7 @@ export const changePassword = async (req, res) => {
       // Update password in database
       await executeQuery(
         `
-                UPDATE users 
+                UPDATE users
                 SET password = ?, updated_at = NOW()
                 WHERE id = ?
             `,
@@ -316,13 +316,13 @@ export const refreshToken = async (req, res) => {
       // Get user from database to ensure they still exist and are active
       const users = await executeQuery(
         `
-                SELECT 
+                SELECT
                     id,
                     username,
                     email,
                     role,
                     is_active
-                FROM users 
+                FROM users
                 WHERE id = ? AND is_active = 1
             `,
         [decoded.id],
@@ -430,7 +430,7 @@ export const verifyToken = async (req, res) => {
       const users = await executeQuery(
         `
                 SELECT is_active
-                FROM users 
+                FROM users
                 WHERE id = ?
             `,
         [user.id],
@@ -480,7 +480,7 @@ export const getUserProfile = async (req, res) => {
       // Get fresh user data from database
       const users = await executeQuery(
         `
-                SELECT 
+                SELECT
                     id,
                     username,
                     email,
@@ -489,7 +489,7 @@ export const getUserProfile = async (req, res) => {
                     last_login,
                     created_at,
                     updated_at
-                FROM users 
+                FROM users
                 WHERE id = ?
             `,
         [userId],
