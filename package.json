@@ -1,5 +1,6 @@
 {
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
   "name": "distress-management-system",
   "version": "1.0.0",
   "description": "A comprehensive web application for managing and responding to distress messages and emergency cases",
@@ -41,6 +42,8 @@
   }
 }
 =======
+=======
+>>>>>>> Stashed changes
     "name": "distress-management-system",
     "version": "1.0.0",
     "description": "A comprehensive web application for managing and responding to distress messages and emergency cases",
@@ -79,5 +82,9 @@
       "npm": ">=8.0.0"
     }
   }
+<<<<<<< Updated upstream
+  
+>>>>>>> Stashed changes
+=======
   
 >>>>>>> Stashed changes
