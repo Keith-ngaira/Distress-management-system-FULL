@@ -9,7 +9,8 @@
     "dev": "nodemon src/server.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "setup-db": "node setup-database.js",
-    "test-db": "node test-db.js"
+    "test-db": "node test-db.js",
+    "test-connection": "node test-connection.js"
   },
   "dependencies": {
     "express": "^4.18.2",
