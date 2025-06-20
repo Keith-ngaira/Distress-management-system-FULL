@@ -129,6 +129,23 @@ const executeQuery = async (sql, params = [], retryCount = 0) => {
 
 // Execute multiple queries in a transaction
 const executeTransaction = async (queries) => {
+  // Handle development mode without database
+  if (isDevModeNoDB) {
+    logger.info(`Mock transaction executed with ${queries.length} queries`);
+    const results = [];
+    for (const { sql } of queries) {
+      if (sql.toLowerCase().includes("insert")) {
+        results.push({
+          insertId: Math.floor(Math.random() * 1000),
+          affectedRows: 1,
+        });
+      } else {
+        results.push({ affectedRows: 1 });
+      }
+    }
+    return results;
+  }
+
   let connection;
   try {
     connection = await pool.getConnection();
