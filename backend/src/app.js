@@ -153,6 +153,7 @@ app.get("/", (req, res) => {
       health: "/health",
       auth: "/api/auth/*",
       api: "/api/*",
+      builder: "/api/builder/*",
     },
   });
 });
@@ -179,6 +180,7 @@ app.use("/api/dashboard", authenticateToken, dashboardRoutes);
 app.use("/api/users", authenticateToken, userRoutes);
 app.use("/api/notifications", authenticateToken, notificationRoutes);
 app.use("/api/case-assignments", authenticateToken, caseAssignmentRoutes);
+app.use("/api/builder", authenticateToken, builderRoutes);
 
 // Error handling
 app.use(errorLogger);
