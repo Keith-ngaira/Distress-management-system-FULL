@@ -3,8 +3,8 @@ import axios from "axios";
 // Detect if running in Builder.io proxy environment
 const isBuilderProxy = window.location.hostname.includes("builder.codes");
 const API_BASE_URL = isBuilderProxy
-  ? "" // Use relative URL for proxy
-  : process.env.REACT_APP_API_URL || "http://localhost:5556";
+  ? "/api" // Use relative URL with /api prefix for proxy
+  : process.env.REACT_APP_API_URL || "http://localhost:5556/api";
 
 // Log API configuration in development only
 if (process.env.NODE_ENV === "development") {
