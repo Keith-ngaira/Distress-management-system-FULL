@@ -21,7 +21,7 @@ const EditDistressMessage = () => {
 
   useEffect(() => {
     fetchMessage();
-  }, [id, fetchMessage]);
+  }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchMessage = async () => {
     if (!id) return;
