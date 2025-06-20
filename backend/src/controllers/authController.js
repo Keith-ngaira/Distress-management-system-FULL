@@ -1,58 +1,16 @@
-import * as bcrypt from "bcrypt";
+import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { executeQuery } from "../db.js";
-import { revokeToken } from "../middleware/auth.js";
+import { executeQuery, isConnected } from "../db.js";
+import { logger } from "../middleware/logger.js";
 import { findUserByUsername } from "./mockData.js";
+import { updateLastLogin } from "./userController.js";
 
-// Maximum failed login attempts before temporary lockout
-const MAX_LOGIN_ATTEMPTS = 5;
-const LOCKOUT_DURATION = 15; // minutes
-
-// In-memory store for failed login attempts (should be moved to Redis in production)
-const failedLoginAttempts = new Map();
-
-const incrementLoginAttempts = (username) => {
-  const now = Date.now();
-  const attempts = failedLoginAttempts.get(username) || {
-    count: 0,
-    firstAttempt: now,
-  };
-
-  // Reset if lockout duration has passed
-  if (attempts.count >= MAX_LOGIN_ATTEMPTS) {
-    const timeSinceFirstAttempt = (now - attempts.firstAttempt) / (1000 * 60); // convert to minutes
-    if (timeSinceFirstAttempt >= LOCKOUT_DURATION) {
-      attempts.count = 1;
-      attempts.firstAttempt = now;
-    }
-  } else {
-    attempts.count += 1;
-  }
-
-  failedLoginAttempts.set(username, attempts);
-  return attempts;
-};
-
-const resetLoginAttempts = (username) => {
-  failedLoginAttempts.delete(username);
-};
-
-const isAccountLocked = (username) => {
-  const attempts = failedLoginAttempts.get(username);
-  if (!attempts) return false;
-
-  if (attempts.count >= MAX_LOGIN_ATTEMPTS) {
-    const timeSinceFirstAttempt =
-      (Date.now() - attempts.firstAttempt) / (1000 * 60);
-    return timeSinceFirstAttempt < LOCKOUT_DURATION;
-  }
-  return false;
-};
-
-export const login = async (req, res) => {
+// User login
+export const loginUser = async (req, res) => {
   try {
     const { username, password } = req.body;
 
+    // Validate input
     if (!username || !password) {
       return res.status(400).json({
         success: false,
@@ -60,238 +18,153 @@ export const login = async (req, res) => {
       });
     }
 
-    // Check if account is locked
-    if (isAccountLocked(username)) {
-      return res.status(429).json({
-        success: false,
-        message: `Account locked. Please try again after ${LOCKOUT_DURATION} minutes.`,
-      });
-    }
+    let user;
+    let usingFallback = false;
 
-    let user = null;
-
-    try {
-      // Try MySQL first
+    if (!isConnected()) {
+      logger.warn("Database not connected, using mock data for authentication");
+      user = findUserByUsername(username);
+      usingFallback = true;
+    } else {
+      // Get user from database
       const users = await executeQuery(
-        "SELECT * FROM users WHERE username = ? AND is_active = TRUE",
+        `
+                SELECT 
+                    id,
+                    username,
+                    password,
+                    email,
+                    role,
+                    is_active,
+                    last_login,
+                    created_at
+                FROM users 
+                WHERE username = ? AND is_active = 1
+            `,
         [username],
       );
 
-      if (users.length > 0) {
-        user = users[0];
-      }
-    } catch (dbError) {
-      console.error("Database error, using mock data for login:", dbError);
-
-      // Fallback to mock data
-      const mockUser = findUserByUsername(username);
-      if (mockUser && mockUser.is_active) {
-        user = mockUser;
-      }
+      user = users[0];
     }
 
     if (!user) {
-      incrementLoginAttempts(username);
+      logger.warn(`Login attempt failed: User not found - ${username}`);
       return res.status(401).json({
         success: false,
-        message: "Invalid credentials",
+        message: "Invalid username or password",
       });
     }
 
-    const validPassword = await bcrypt.compare(password, user.password);
-
-    if (!validPassword) {
-      const attempts = incrementLoginAttempts(username);
-      const remainingAttempts = MAX_LOGIN_ATTEMPTS - attempts.count;
-
+    // Check if user is active
+    if (!user.is_active) {
+      logger.warn(`Login attempt failed: User account disabled - ${username}`);
       return res.status(401).json({
         success: false,
-        message:
-          remainingAttempts > 0
-            ? `Invalid credentials. ${remainingAttempts} attempts remaining.`
-            : `Account locked. Please try again after ${LOCKOUT_DURATION} minutes.`,
+        message: "Account is disabled. Please contact administrator.",
       });
     }
 
-    // Reset login attempts on successful login
-    resetLoginAttempts(username);
-
-    // Create token with required fields for jwt-decode
-    const token = jwt.sign(
-      {
-        sub: user.id.toString(),
-        id: user.id,
-        username: user.username,
-        role: user.role,
-        iat: Math.floor(Date.now() / 1000),
-        exp: Math.floor(Date.now() / 1000) + 24 * 60 * 60, // 24 hours
-      },
-      process.env.JWT_SECRET,
-    );
-
-    // Update last login
-    try {
-      await executeQuery(
-        "UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?",
-        [user.id],
-      );
-    } catch (dbError) {
-      console.error("Could not update last login (using mock data):", dbError);
-      // For mock data, we don't need to update last login
+    // Verify password
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      logger.warn(`Login attempt failed: Invalid password - ${username}`);
+      return res.status(401).json({
+        success: false,
+        message: "Invalid username or password",
+      });
     }
 
+    // Update last login timestamp (non-blocking)
+    if (!usingFallback) {
+      updateLastLogin(user.id).catch((error) => {
+        logger.error("Error updating last login:", error);
+      });
+    }
+
+    // Generate JWT token
+    const tokenPayload = {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      role: user.role,
+    };
+
+    const token = jwt.sign(tokenPayload, process.env.JWT_SECRET, {
+      expiresIn: "24h",
+      issuer: "distress-management-system",
+      audience: "distress-management-users",
+    });
+
+    // Remove password from user object
     const { password: _, ...userWithoutPassword } = user;
+
+    // Log successful login
+    logger.info(
+      `Successful login: ${username} (${user.role})${usingFallback ? " [FALLBACK]" : ""}`,
+    );
 
     res.json({
       success: true,
       message: "Login successful",
       data: {
-        user: userWithoutPassword,
         token,
+        user: userWithoutPassword,
       },
+      fallback: usingFallback,
     });
   } catch (error) {
-    console.error("Login error:", error);
+    logger.error("Login error:", error);
+
+    // Try fallback authentication if database error
+    if (isConnected()) {
+      logger.warn(
+        "Database error during login, attempting fallback authentication",
+      );
+      try {
+        const user = findUserByUsername(req.body.username);
+        if (user && (await bcrypt.compare(req.body.password, user.password))) {
+          const tokenPayload = {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            role: user.role,
+          };
+
+          const token = jwt.sign(tokenPayload, process.env.JWT_SECRET, {
+            expiresIn: "24h",
+          });
+
+          const { password: _, ...userWithoutPassword } = user;
+
+          return res.json({
+            success: true,
+            message: "Login successful (fallback)",
+            data: {
+              token,
+              user: userWithoutPassword,
+            },
+            fallback: true,
+          });
+        }
+      } catch (fallbackError) {
+        logger.error("Fallback authentication also failed:", fallbackError);
+      }
+    }
+
     res.status(500).json({
       success: false,
-      message: "Internal server error",
+      message: "Internal server error during authentication",
     });
   }
 };
 
-export const logout = async (req, res) => {
-  try {
-    const token = req.headers.authorization?.split(" ")[1];
-
-    if (!token) {
-      return res.status(400).json({
-        success: false,
-        message: "No token provided",
-      });
-    }
-
-    const success = await revokeToken(token);
-
-    if (!success) {
-      return res.status(500).json({
-        success: false,
-        message: "Failed to revoke token",
-      });
-    }
-
-    res.json({
-      success: true,
-      message: "Logged out successfully",
-    });
-  } catch (error) {
-    console.error("Logout error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Internal server error",
-    });
-  }
-};
-
-export const register = async (req, res) => {
-  try {
-    const { username, password, email, role } = req.body;
-
-    if (!username || !password || !email) {
-      return res.status(400).json({
-        success: false,
-        message: "Username, password, and email are required",
-      });
-    }
-
-    // Check if any users exist
-    const [existingUsers] = await executeQuery(
-      "SELECT COUNT(*) as count FROM users",
-    );
-    const isFirstUser = existingUsers[0].count === 0;
-
-    // If this is not the first user, only admin can register new users
-    if (!isFirstUser && (!req.user || req.user.role !== "admin")) {
-      return res.status(403).json({
-        success: false,
-        message: "Only admin can register new users",
-      });
-    }
-
-    // If this is not the first user and the role is admin, only existing admin can create new admins
-    if (
-      !isFirstUser &&
-      role === "admin" &&
-      (!req.user || req.user.role !== "admin")
-    ) {
-      return res.status(403).json({
-        success: false,
-        message: "Only existing admin can create new admin users",
-      });
-    }
-
-    // Check if user already exists
-    const [existingUser] = await executeQuery(
-      "SELECT id, username, email FROM users WHERE username = ? OR email = ?",
-      [username, email],
-    );
-
-    if (existingUser.length) {
-      const field =
-        existingUser[0].username === username ? "username" : "email";
-      return res.status(400).json({
-        success: false,
-        message: `User with this ${field} already exists`,
-      });
-    }
-
-    // For the first user, force role to be admin
-    const userRole = isFirstUser ? "admin" : role;
-
-    // Hash password
-    const salt = await bcrypt.genSalt(12);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    // Insert new user
-    const [result] = await executeQuery(
-      `INSERT INTO users (
-                username,
-                password,
-                email,
-                role,
-                is_active,
-                created_at
-            ) VALUES (?, ?, ?, ?, TRUE, CURRENT_TIMESTAMP)`,
-      [username, hashedPassword, email, userRole],
-    );
-
-    // Get the created user
-    const [newUser] = await executeQuery(
-      "SELECT id, username, email, role, created_at FROM users WHERE id = ?",
-      [result.insertId],
-    );
-
-    res.status(201).json({
-      success: true,
-      message: isFirstUser
-        ? "First admin user registered successfully"
-        : "User registered successfully",
-      data: {
-        user: newUser[0],
-      },
-    });
-  } catch (error) {
-    console.error("Registration error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Internal server error",
-    });
-  }
-};
-
+// Change password
 export const changePassword = async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
+    const userId = req.user.id;
 
+    // Validate input
     if (!currentPassword || !newPassword) {
       return res.status(400).json({
         success: false,
@@ -299,67 +172,353 @@ export const changePassword = async (req, res) => {
       });
     }
 
-    const userId = req.user.id;
-
-    // Get user's current password
-    const [users] = await executeQuery(
-      "SELECT password FROM users WHERE id = ? AND is_active = TRUE",
-      [userId],
-    );
-
-    if (!users.length) {
-      return res.status(404).json({
+    // Validate new password strength
+    if (newPassword.length < 6) {
+      return res.status(400).json({
         success: false,
-        message: "User not found or inactive",
+        message: "New password must be at least 6 characters long",
       });
     }
 
-    const validPassword = await bcrypt.compare(
-      currentPassword,
-      users[0].password,
-    );
+    let user;
+    let usingFallback = false;
 
-    if (!validPassword) {
+    if (!isConnected()) {
+      logger.warn(
+        "Database not connected, using mock data for password change",
+      );
+      // For mock data, we'll just simulate the operation
+      usingFallback = true;
+      user = {
+        id: userId,
+        password:
+          "$2b$10$NKxDv2xBS3.Pc0mMHlATQuMi.auxS0Gaoers5FqPFtqejiNRK/OYm",
+      }; // admin123 hash
+    } else {
+      // Get current user from database
+      const users = await executeQuery(
+        `
+                SELECT id, password
+                FROM users 
+                WHERE id = ? AND is_active = 1
+            `,
+        [userId],
+      );
+
+      if (users.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found",
+        });
+      }
+
+      user = users[0];
+    }
+
+    // Verify current password
+    const isCurrentPasswordValid = await bcrypt.compare(
+      currentPassword,
+      user.password,
+    );
+    if (!isCurrentPasswordValid) {
+      logger.warn(
+        `Password change failed: Invalid current password - User ID: ${userId}`,
+      );
       return res.status(401).json({
         success: false,
         message: "Current password is incorrect",
       });
     }
 
-    // Prevent reuse of current password
-    const isSamePassword = await bcrypt.compare(newPassword, users[0].password);
-    if (isSamePassword) {
-      return res.status(400).json({
+    // Hash new password
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+
+    if (!usingFallback) {
+      // Update password in database
+      await executeQuery(
+        `
+                UPDATE users 
+                SET password = ?, updated_at = NOW()
+                WHERE id = ?
+            `,
+        [hashedNewPassword, userId],
+      );
+    }
+
+    logger.info(
+      `Password changed successfully for user ID: ${userId}${usingFallback ? " [FALLBACK]" : ""}`,
+    );
+
+    res.json({
+      success: true,
+      message: "Password changed successfully",
+      fallback: usingFallback,
+    });
+  } catch (error) {
+    logger.error("Password change error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error during password change",
+    });
+  }
+};
+
+// Refresh token
+export const refreshToken = async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    const token = authHeader && authHeader.split(" ")[1];
+
+    if (!token) {
+      return res.status(401).json({
         success: false,
-        message: "New password must be different from current password",
+        message: "No token provided",
       });
     }
 
-    // Hash new password
-    const salt = await bcrypt.genSalt(12);
-    const hashedPassword = await bcrypt.hash(newPassword, salt);
+    // Verify current token (even if expired)
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (error) {
+      if (error.name === "TokenExpiredError") {
+        // Token is expired, but we can still decode it to get user info
+        decoded = jwt.decode(token);
+      } else {
+        return res.status(401).json({
+          success: false,
+          message: "Invalid token",
+        });
+      }
+    }
 
-    // Update password and revoke all existing tokens
-    await executeQuery(
-      "UPDATE users SET password = ?, password_changed_at = CURRENT_TIMESTAMP WHERE id = ?",
-      [hashedPassword, userId],
+    if (!decoded || !decoded.id) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid token payload",
+      });
+    }
+
+    let user;
+    let usingFallback = false;
+
+    if (!isConnected()) {
+      logger.warn("Database not connected, using mock data for token refresh");
+      user = {
+        id: decoded.id,
+        username: decoded.username,
+        email: decoded.email,
+        role: decoded.role,
+        is_active: true,
+      };
+      usingFallback = true;
+    } else {
+      // Get user from database to ensure they still exist and are active
+      const users = await executeQuery(
+        `
+                SELECT 
+                    id,
+                    username,
+                    email,
+                    role,
+                    is_active
+                FROM users 
+                WHERE id = ? AND is_active = 1
+            `,
+        [decoded.id],
+      );
+
+      if (users.length === 0) {
+        return res.status(401).json({
+          success: false,
+          message: "User not found or inactive",
+        });
+      }
+
+      user = users[0];
+    }
+
+    // Generate new token
+    const tokenPayload = {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      role: user.role,
+    };
+
+    const newToken = jwt.sign(tokenPayload, process.env.JWT_SECRET, {
+      expiresIn: "24h",
+      issuer: "distress-management-system",
+      audience: "distress-management-users",
+    });
+
+    logger.info(
+      `Token refreshed for user: ${user.username}${usingFallback ? " [FALLBACK]" : ""}`,
     );
 
-    // Revoke current token to force re-login with new password
-    if (req.token) {
-      revokeToken(req.token);
+    res.json({
+      success: true,
+      message: "Token refreshed successfully",
+      data: {
+        token: newToken,
+        user,
+      },
+      fallback: usingFallback,
+    });
+  } catch (error) {
+    logger.error("Token refresh error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error during token refresh",
+    });
+  }
+};
+
+// Logout user (token blacklisting would be implemented here in production)
+export const logoutUser = async (req, res) => {
+  try {
+    // In a production environment, you would typically:
+    // 1. Add the token to a blacklist/revocation list
+    // 2. Store revoked tokens in Redis or database
+    // 3. Check blacklist in the authentication middleware
+
+    const userId = req.user?.id;
+    const username = req.user?.username;
+
+    // Log the logout event
+    if (userId && username) {
+      logger.info(`User logged out: ${username} (ID: ${userId})`);
+
+      // Optionally log to audit table if database is available
+      if (isConnected()) {
+        try {
+          await executeQuery(
+            `
+                        INSERT INTO audit_logs (user_id, action_type, entity_type, entity_id, created_at)
+                        VALUES (?, 'logout', 'user', ?, NOW())
+                    `,
+            [userId, userId],
+          );
+        } catch (auditError) {
+          logger.error("Error logging logout to audit table:", auditError);
+          // Don't fail the logout for audit errors
+        }
+      }
     }
 
     res.json({
       success: true,
-      message:
-        "Password changed successfully. Please log in with your new password.",
+      message: "Logged out successfully",
     });
   } catch (error) {
-    console.error("Change password error:", error);
+    logger.error("Logout error:", error);
     res.status(500).json({
       success: false,
-      message: "Internal server error",
+      message: "Internal server error during logout",
+    });
+  }
+};
+
+// Verify token endpoint (for frontend to check token validity)
+export const verifyToken = async (req, res) => {
+  try {
+    // If we reach here, the token is valid (verified by auth middleware)
+    const user = req.user;
+
+    // Optionally verify user still exists and is active in database
+    if (isConnected()) {
+      const users = await executeQuery(
+        `
+                SELECT is_active
+                FROM users 
+                WHERE id = ?
+            `,
+        [user.id],
+      );
+
+      if (users.length === 0 || !users[0].is_active) {
+        return res.status(401).json({
+          success: false,
+          message: "User account not found or inactive",
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      message: "Token is valid",
+      data: {
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          role: user.role,
+        },
+      },
+    });
+  } catch (error) {
+    logger.error("Token verification error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error during token verification",
+    });
+  }
+};
+
+// Get user profile
+export const getUserProfile = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    let user;
+    let usingFallback = false;
+
+    if (!isConnected()) {
+      logger.warn("Database not connected, using token data for profile");
+      user = req.user;
+      usingFallback = true;
+    } else {
+      // Get fresh user data from database
+      const users = await executeQuery(
+        `
+                SELECT 
+                    id,
+                    username,
+                    email,
+                    role,
+                    is_active,
+                    last_login,
+                    created_at,
+                    updated_at
+                FROM users 
+                WHERE id = ?
+            `,
+        [userId],
+      );
+
+      if (users.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "User profile not found",
+        });
+      }
+
+      user = users[0];
+    }
+
+    logger.info(
+      `Profile accessed by user: ${user.username}${usingFallback ? " [FALLBACK]" : ""}`,
+    );
+
+    res.json({
+      success: true,
+      data: user,
+      fallback: usingFallback,
+    });
+  } catch (error) {
+    logger.error("Get profile error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error while fetching profile",
     });
   }
 };
